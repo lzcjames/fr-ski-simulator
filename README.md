@@ -120,6 +120,8 @@ flowchart TD
 
 游戏构建成果：[Engine v1.3 测试与下载](https://github.com/lzcjames/fr-ski-simulator/actions/runs/45505895867)。
 
+Engine v1.4 的轻量启动实验已通过两个雪场的桌面测试。统一大厅已加入构建流程：[大厅构建与下载](https://github.com/lzcjames/fr-ski-simulator/actions/workflows/build-lobby.yml)，[发布方法](docs/lobby.md)。
+
 ## 项目文件与技术资料
 
 - [GitHub Actions](https://github.com/lzcjames/fr-ski-simulator/actions)：自动运行 Python、构建及测试游戏。
