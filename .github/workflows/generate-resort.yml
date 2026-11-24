@@ -45,6 +45,7 @@ jobs:
           python-version: '3.11'
       - run: python -m compileall -q scripts
       - run: python tests/test_generator.py -v
+      - run: python tests/test_engine_v1.py -v
   generate:
     if: inputs.resort != ''
     needs: unit-tests
@@ -102,9 +103,12 @@ jobs:
             python scripts/resolve_template.py --download --out .work/engine/template.html
           fi
           echo "TEMPLATE=.work/engine/template.html" >> "$GITHUB_ENV"
+      - name: Compile shared engine template
+        if: inputs.data_only == false
+        run: python scripts/engine_v1.py compile --template "$TEMPLATE" --out .work/engine/shared.html
       - name: Build self-contained engineering preview
         if: inputs.data_only == false
-        run: python scripts/build_game.py --config "$CONFIG" --template "$TEMPLATE" --data .work/data/resort-data.json --out ".work/output/$RESORT.html"
+        run: python scripts/engine_v1.py pack --config "$CONFIG" --engine .work/engine/shared.html --data .work/data/resort-data.json --out ".work/output/$RESORT.html"
       - name: WebGL2 desktop smoke test
         if: inputs.data_only == false
         run: node .work/skill/scripts/qa_html.mjs --html ".work/output/$RESORT.html" --out .work/qa --width 1440 --height 900 --backend webgl2 --probe .work/skill/scripts/smoke_probe.js
