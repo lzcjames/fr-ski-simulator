@@ -112,7 +112,7 @@ flowchart TD
 
 把通用游戏引擎与雪场专属数据逐渐分离。
 
-以后制作 Alpe d'Huez、Val Thorens、Tignes 等其他法国雪场时，希望主要通过更换地理数据和配置来完成，而不用每次重新编写整个游戏。通用生成器的第一阶段已完成：新增雪场先在 `resorts/` 下建立自己的 `config.json`（名称、真实地图范围、数据来源等），再通过统一的 [build_game.py](scripts/build_game.py) 生成 HTML，或在 [GitHub Actions](https://github.com/lzcjames/fr-ski-simulator/actions) 选择 `Generate resort preview`。目前仅 Les Deux Alpes 有真实数据及配置，任意雪场一键生成和实际游玩验证尚未完成。
+以后制作 Alpe d'Huez、Val Thorens、Tignes 等其他法国雪场时，希望主要通过更换地理数据和配置来完成，而不用每次重新编写整个游戏。通用生成器的第一阶段已完成：新增雪场先在 `resorts/` 下建立自己的 `config.json`（名称、真实地图范围、数据来源等），再通过统一的 [build_game.py](scripts/build_game.py) 生成 HTML，或在 [GitHub Actions](https://github.com/lzcjames/fr-ski-simulator/actions) 选择 `Generate resort preview`。目前 Les Deux Alpes 已有经过数据验证的工程预览；Alpe d'Huez 已添加配置并启动第二雪场集成测试，结果尚待验证。任意雪场一键生成和实际游玩验证尚未完成。
 
 详细方法见 [多雪场生成器](docs/multi-resort-generator.md)。
 
