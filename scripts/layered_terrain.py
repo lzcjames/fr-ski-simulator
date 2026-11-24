@@ -89,13 +89,16 @@ def sample_raster(raster,credit,cfg,step,padding,skill):
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     for k in ("config","skill","osm","work"): p.add_argument("--"+k,type=Path,required=True)
-    p.add_argument("--raster",type=Path);p.add_argument("--source-credit")
+    sources=p.add_mutually_exclusive_group()
+    sources.add_argument("--raster",type=Path)
+    sources.add_argument("--ign-wms",action="store_true",help="Fetch and independently cross-check numeric IGN GeoTIFFs")
+    p.add_argument("--source-credit")
     p.add_argument("--near-step",type=int,choices=(5,10,15),default=None)
     a=p.parse_args(); cfg=load_config(a.config); skill=a.skill.resolve(); work=a.work.resolve()
     if work.exists() and any(work.iterdir()): p.error("use a fresh output directory")
     if a.raster and not a.source_credit: p.error("raster requires source credit and vertical datum")
-    if a.near_step==5 and not a.raster: p.error("5 m mode requires real elevation raster; do not label Terrarium as high resolution")
-    step=a.near_step or (5 if a.raster else 10)
+    if a.near_step==5 and not (a.raster or a.ign_wms): p.error("5 m mode requires real elevation raster; do not label Terrarium as high resolution")
+    step=a.near_step or (5 if (a.raster or a.ign_wms) else 10)
     revision=subprocess.check_output(["git","-C",str(skill),"rev-parse","HEAD"],text=True).strip()
     if revision!=cfg["skillCommit"]: p.error("unexpected Skill revision")
     osm=a.osm.resolve()
@@ -107,7 +110,11 @@ def main():
     dems=[]
     for role,spacing,padding in (("near",step,150),("mid",20,900),("far",60,7500)):
         path=work/(role+".json")
-        if a.raster:
+        if a.ign_wms:
+            from ign_terrain import fetch_ign_layer
+            dem=fetch_ign_layer(cfg,spacing,padding,skill,work,role)
+            path.write_text(json.dumps(dem,separators=(",",":")),encoding="utf-8")
+        elif a.raster:
             dem=sample_raster(a.raster.resolve(),a.source_credit,cfg,spacing,padding,skill)
             path.write_text(json.dumps(dem,separators=(",",":")),encoding="utf-8")
         else:
