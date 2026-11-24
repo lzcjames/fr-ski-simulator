@@ -112,7 +112,7 @@ flowchart TD
 
 把通用游戏引擎与雪场专属数据逐渐分离。
 
-以后制作 Alpe d'Huez、Val Thorens、Tignes 等其他法国雪场时，希望主要通过更换地理数据和配置来完成，而不用每次重新编写整个游戏。通用生成器的第一阶段已完成：新增雪场先在 `resorts/` 下建立自己的 `config.json`（名称、真实地图范围、数据来源等），再通过统一的 [build_game.py](scripts/build_game.py) 生成 HTML，或在 [GitHub Actions](https://github.com/lzcjames/fr-ski-simulator/actions) 选择 `Generate resort preview`。目前 Les Deux Alpes 和 Alpe d'Huez 已通过同一份通用引擎生成各自的 HTML。Engine v1.1 的 10/20/60 米独立 Terrarium 地形与 WebGL2 基础操作测试均已通过；完整雪道滑行及真实手机验证仍待完成。IGN 5/20/60 米地形接入正在验证，尚未替代已通过测试的版本。新增雪场仍需先配置真实地图范围。
+以后制作 Alpe d'Huez、Val Thorens、Tignes 等其他法国雪场时，希望主要通过更换地理数据和配置来完成，而不用每次重新编写整个游戏。通用生成器的第一阶段已完成：新增雪场先在 `resorts/` 下建立自己的 `config.json`（名称、真实地图范围、数据来源等），再通过统一的 [build_game.py](scripts/build_game.py) 生成 HTML，或在 [GitHub Actions](https://github.com/lzcjames/fr-ski-simulator/actions) 选择 `Generate resort preview`。目前 Les Deux Alpes 和 Alpe d'Huez 已通过同一份通用引擎生成各自的 HTML。Engine v1.1 的 10/20/60 米独立 Terrarium 地形与 WebGL2 基础操作测试均已通过；完整雪道滑行及真实手机验证仍待完成。Engine v1.2 已通过 IGN 5/20/60 米地形验证和桌面 WebGL2 基础操作测试，v1.1 的手机横竖屏模拟测试也已通过。当前正在验证 IGN 版手机操作和无损地形压缩。新增雪场仍需先配置真实地图范围。
 
 引擎优化说明：[Engine v1](docs/engine-v1.md) · [分层地形](docs/engine-v1.1-terrain.md) · [IGN 试验](docs/engine-v1.2-ign.md) · [手机性能测试](docs/mobile-performance.md)。
 
@@ -129,6 +129,6 @@ flowchart TD
 
 ## 来源与署名
 
-感谢 [Cold Smoke](https://github.com/huiskylabs/cold-smoke)、[Avoriaz 游戏](https://avoriaz.manus.space/) 及 [awoele 的 Skill](https://github.com/awoele/ski-resort-to-game)。地理数据来自 [OpenStreetMap contributors](https://www.openstreetmap.org/copyright)、[AWS Terrain Tiles](https://registry.opendata.aws/terrain-tiles/)，后续计划采用 [IGN](https://cartes.gouv.fr/) 高精度地形。
+感谢 [Cold Smoke](https://github.com/huiskylabs/cold-smoke)、[Avoriaz 游戏](https://avoriaz.manus.space/) 及 [awoele 的 Skill](https://github.com/awoele/ski-resort-to-game)。地理数据来自 [OpenStreetMap contributors](https://www.openstreetmap.org/copyright)、[AWS Terrain Tiles](https://registry.opendata.aws/terrain-tiles/)，Engine v1.2 使用 [IGN RGE ALTI](https://www.data.gouv.fr/datasets/rge-alti-r)（Licence Ouverte 2.0）数值高程服务。
 
 本项目为独立模拟游戏，并非雪场官方产品或现实滑雪导航工具。暂未选择项目整体许可证，第三方代码和数据仍遵循各自的许可与署名要求。
