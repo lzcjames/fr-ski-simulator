@@ -45,24 +45,37 @@ def grid_request(cfg,step,padding,pr):
         raise ValueError("WMS request exceeds bounded test size")
     return (west,south,east,north),width,height
 
-def inspect_tiff(raw,bbox,width,height,step):
+def inspect_tiff(raw,bbox,width,height,step,allow_untagged=False):
     import numpy as np
     from rasterio.io import MemoryFile
+    from rasterio.crs import CRS
+    from rasterio.transform import Affine
     if raw[:4] not in (b"II*\x00",b"MM\x00*"):
         raise ValueError("IGN response is not a numeric GeoTIFF: "+raw[:160].decode("utf-8","replace"))
     with MemoryFile(raw) as mem, mem.open() as ds:
         if ds.driver!="GTiff" or ds.count!=1 or ds.dtypes[0] not in ("float32","float64","int16","int32"):
             raise ValueError("not a single-band numeric elevation TIFF")
-        if ds.crs is None or ds.crs.to_epsg()!=2154 or (ds.width,ds.height)!=(width,height):
-            raise ValueError("unexpected GeoTIFF CRS or dimensions")
-        if max(abs(a-b) for a,b in zip(ds.bounds,bbox))>0.05 or max(abs(a-step) for a in ds.res)>0.05:
-            raise ValueError("GeoTIFF bounds or resolution mismatch")
+        actual={"crs":str(ds.crs),"bounds":list(ds.bounds),"dimensions":[ds.width,ds.height],"transform":list(ds.transform),"dtype":ds.dtypes[0]}
+        print("WMS TIFF metadata:",json.dumps(actual),flush=True)
+        if (ds.width,ds.height)!=(width,height):
+            raise ValueError("unexpected GeoTIFF dimensions: "+json.dumps(actual))
+        # GetMap defines bounds and pixel size even if its TIFF omits all geotags.
+        # Never override conflicting explicit coordinates; untagged images must
+        # still pass numeric checks and independent IGN elevation comparisons.
+        untagged=ds.crs is None and ds.transform==Affine.identity()
+        if untagged and not allow_untagged:
+            raise ValueError("missing GeoTIFF georeferencing")
+        if not untagged:
+            if ds.crs!=CRS.from_epsg(2154):
+                raise ValueError("unexpected GeoTIFF CRS: "+json.dumps(actual))
+            if max(abs(a-b) for a,b in zip(ds.bounds,bbox))>0.05 or max(abs(a-step) for a in ds.res)>0.05:
+                raise ValueError("GeoTIFF bounds or resolution mismatch: "+json.dumps(actual))
         values=ds.read(1,masked=True)
         if np.ma.getmaskarray(values).any() or not np.isfinite(values).all():
             raise ValueError("missing elevations; no fallback permitted")
         if float(values.min())< -100 or float(values.max())>5000 or float(values.max()-values.min())<50:
             raise ValueError("implausible alpine elevation values")
-        return {"dtype":ds.dtypes[0],"crs":str(ds.crs),"bounds":list(ds.bounds),"dimensions":[width,height],"pixelSize":list(ds.res),"range":[float(values.min()),float(values.max())]}
+        return {"dtype":ds.dtypes[0],"crs":str(ds.crs),"bounds":list(ds.bounds),"dimensions":[width,height],"pixelSize":list(ds.res),"range":[float(values.min()),float(values.max())],"georeferencing":"request-derived pending point checks" if untagged else "embedded"}
 
 def verify_points(dem,pr,step):
     # Compare nine actual grid nodes to the independent point elevation endpoint.
@@ -92,10 +105,22 @@ def fetch_ign_layer(cfg,step,padding,skill,work,role):
     bbox,width,height=grid_request(cfg,step,padding,pr)
     params={"SERVICE":"WMS","VERSION":"1.3.0","REQUEST":"GetMap","LAYERS":LAYER,"STYLES":"normal","FORMAT":"image/geotiff","CRS":"EPSG:2154","BBOX":",".join(map(str,bbox)),"WIDTH":width,"HEIGHT":height}
     raw,url=request(WMS,params)
-    info=inspect_tiff(raw,bbox,width,height,step)
     path=Path(work)/(role+"-ign.tif");path.write_bytes(raw)
-    dem=sample_raster(path,CREDIT,cfg,step,padding,skill)
+    info=inspect_tiff(raw,bbox,width,height,step,allow_untagged=True)
+    sample_path=path
+    if info["georeferencing"]=="request-derived pending point checks":
+        import rasterio
+        from rasterio.transform import from_bounds
+        sample_path=Path(work)/(role+"-georeferenced-ign.tif")
+        with rasterio.open(path) as ds:
+            profile=ds.profile.copy()
+            profile.update(crs="EPSG:2154",transform=from_bounds(*bbox,width,height))
+            with rasterio.open(sample_path,"w",**profile) as dst:
+                dst.write(ds.read())
+    dem=sample_raster(sample_path,CREDIT,cfg,step,padding,skill)
     check=verify_points(dem,pr,step)
+    if info["georeferencing"]=="request-derived pending point checks":
+        info["georeferencing"]="request-derived; independent point checks passed"
     meta=dem["_meta"]
     meta.update(requestedSource="ign-wms",sourceCounts={"ign-wms":len(dem["h"])},
         wms={"url":url,"layer":LAYER,"sha256":hashlib.sha256(raw).hexdigest(),"numericRaster":info},
