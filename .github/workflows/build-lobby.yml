@@ -1,0 +1,93 @@
+name: Build multi-resort lobby
+on:
+  workflow_dispatch:
+    inputs:
+      compact_run:
+        description: Validated compact IGN mobile workflow run
+        default: '45505895867'
+        required: true
+      startup_run:
+        description: Validated startup profiling workflow run
+        default: '45506525645'
+        required: true
+  push:
+    paths:
+      - 'site/**'
+      - 'scripts/build_lobby.py'
+      - 'scripts/check_lobby.py'
+      - '.github/workflows/build-lobby.yml'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Obtain tested compact games
+        uses: actions/download-artifact@v4
+        with:
+          pattern: '*-ign-compact'
+          path: .work/mobile
+          run-id: ${{ inputs.compact_run || '45505895867' }}
+          github-token: ${{ github.token }}
+      - name: Obtain tested optional light-mode games
+        uses: actions/download-artifact@v4
+        with:
+          pattern: '*-startup-profile'
+          path: .work/startup
+          run-id: ${{ inputs.startup_run || '45506525645' }}
+          github-token: ${{ github.token }}
+      - name: Organize by resort profile
+        run: |
+          mkdir -p .work/input
+          for profile in resorts/*/config.json; do
+            slug=$(basename "$(dirname "$profile")")
+            portrait=".work/mobile/$slug-portrait-ign-compact"
+            landscape=".work/mobile/$slug-landscape-ign-compact"
+            startup=".work/startup/$slug-startup-profile"
+            if [ ! -d "$portrait" ] && [ ! -d "$landscape" ]; then continue; fi
+            test -d "$portrait" && test -d "$landscape"
+            mkdir -p ".work/input/$slug"
+            mv "$portrait" ".work/input/$slug/portrait"
+            mv "$landscape" ".work/input/$slug/landscape"
+            if [ -d "$startup" ]; then mv "$startup" ".work/input/$slug/startup"; fi
+          done
+      - name: Build and check static site
+        run: |
+          python scripts/build_lobby.py --inputs .work/input --out .work/site
+          python scripts/check_lobby.py .work/site
+      - name: Check browser rendering and links
+        run: |
+          CHROME=$(command -v google-chrome || command -v chromium)
+          test -n "$CHROME"
+          "$CHROME" --headless --disable-gpu --no-sandbox --dump-dom "file://$PWD/.work/site/index.html" > .work/lobby-dom.html
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from html import escape
+          dom=Path('.work/lobby-dom.html').read_text()
+          catalog=json.loads(Path('.work/site/catalog.json').read_text())
+          for r in catalog['resorts']:
+              assert r['play'] in dom, r['slug']
+          assert 'FR Ski Simulator' in dom
+          PY
+          "$CHROME" --headless --disable-gpu --no-sandbox --window-size=1440,1100 --screenshot="$PWD/.work/lobby.png" "file://$PWD/.work/site/index.html"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fr-ski-simulator-lobby
+          path: .work/site/
+          if-no-files-found: error
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lobby-qa
+          path: |
+            .work/lobby-dom.html
+            .work/lobby.png
+          if-no-files-found: error
+          retention-days: 14
