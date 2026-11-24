@@ -1,0 +1,106 @@
+name: Generate resort preview
+on:
+  workflow_dispatch:
+    inputs:
+      resort:
+        description: Resort profile folder (e.g. les-deux-alpes)
+        required: true
+        default: les-deux-alpes
+        type: string
+      dem_source:
+        description: Elevation source override
+        type: choice
+        options: [profile, terrarium, ign]
+        default: profile
+      data_only:
+        description: Only prepare real data (until template is committed)
+        type: boolean
+        default: true
+  push:
+    paths:
+      - 'scripts/**'
+      - 'resorts/**'
+      - 'tests/test_generator.py'
+      - '.github/workflows/generate-resort.yml'
+permissions:
+  contents: read
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m compileall -q scripts
+      - run: python tests/test_generator.py -v
+  generate:
+    if: github.event_name == 'workflow_dispatch'
+    needs: unit-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      RESORT: ${{ inputs.resort }}
+      DEM_SOURCE: ${{ inputs.dem_source }}
+      DATA_ONLY: ${{ inputs.data_only }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate resort profile and locate engine
+        run: |
+          CONFIG=$(python scripts/resort_config.py "$RESORT")
+          echo "CONFIG=$CONFIG" >> "$GITHUB_ENV"
+          SHA=$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["skillCommit"])' "$CONFIG")
+          echo "SKILL_SHA=$SHA" >> "$GITHUB_ENV"
+          if [ "$DATA_ONLY" != true ]; then
+            if test -f engine/avoriaz-offline.html; then
+              echo "TEMPLATE=engine/avoriaz-offline.html" >> "$GITHUB_ENV"
+            elif test -f avoriaz-offline.html; then
+              echo "TEMPLATE=avoriaz-offline.html" >> "$GITHUB_ENV"
+            else
+              echo "Authorized template required for HTML generation"; exit 1
+            fi
+          fi
+      - name: Checkout the profile's pinned upstream Skill
+        run: |
+          git clone https://github.com/awoele/ski-resort-to-game.git .work/skill
+          git -C .work/skill checkout --detach "$SKILL_SHA"
+          python -m pip install Pillow
+      - name: Acquire and validate real geographic data
+        run: |
+          args=()
+          if [ "$DEM_SOURCE" != profile ]; then args+=(--source "$DEM_SOURCE"); fi
+          python scripts/prepare_resort.py --config "$CONFIG" --skill .work/skill --work .work/data "${args[@]}"
+      - name: Upload geographic data
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.resort }}-resort-data
+          path: |
+            .work/data/osm.json
+            .work/data/dem.json
+            .work/data/resort-data.json
+            .work/data/resort-data.js
+            .work/data/data-report.json
+          if-no-files-found: error
+          retention-days: 14
+      - name: Build self-contained engineering preview
+        if: inputs.data_only == false
+        run: python scripts/build_game.py --config "$CONFIG" --template "$TEMPLATE" --data .work/data/resort-data.json --out ".work/output/$RESORT.html"
+      - name: WebGL2 desktop smoke test
+        if: inputs.data_only == false
+        run: node .work/skill/scripts/qa_html.mjs --html ".work/output/$RESORT.html" --out .work/qa --width 1440 --height 900 --backend webgl2 --probe .work/skill/scripts/smoke_probe.js
+      - name: Upload preview and QA evidence
+        if: always() && inputs.data_only == false
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.resort }}-engineering-preview
+          path: |
+            .work/output/
+            .work/qa/
+          if-no-files-found: warn
+          retention-days: 14
