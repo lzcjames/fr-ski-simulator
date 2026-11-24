@@ -6,6 +6,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from resort_config import load_config
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -19,7 +20,7 @@ def main():
     p.add_argument("--osm-export", type=Path)
     p.add_argument("--dry-run", action="store_true")
     a = p.parse_args()
-    cfg = json.loads(a.config.read_text(encoding="utf-8"))
+    cfg = load_config(a.config)
     skill, work = a.skill.resolve(), a.work.resolve()
     if work == skill or skill in work.parents:
         p.error("work must be outside the Skill checkout")
@@ -28,7 +29,7 @@ def main():
     if not (w < lon < e and s < lat < n):
         p.error("origin outside bbox")
     step = a.step if a.step is not None else cfg["dem"]["step"]
-    if step <= 0:
+    if not __import__('math').isfinite(step) or step <= 0:
         p.error("step must be positive")
     bbox,origin = ",".join(map(str,cfg["bbox"])), ",".join(map(str,cfg["origin"]))
     osm,dem,data,js,report = [work/f for f in ("osm.json","dem.json","resort-data.json","resort-data.js","data-report.json")]
@@ -37,7 +38,7 @@ def main():
     commands = [
         py("fetch_osm.py","--bbox",bbox,"--out",osm,* (["--from-file",a.osm_export.resolve()] if a.osm_export else [])),
         py("fetch_dem.py","--bbox",bbox,"--origin",origin,"--source",a.source or cfg["dem"]["source"],"--step",step,"--zoom",cfg["dem"]["zoom"],"--padding",cfg["dem"]["padding"],"--cache",work/"cache","--out",dem),
-        py("build_data.py","--osm",osm,"--dem",dem,"--name",cfg["resort"],"--out",js,"--json-out",data,"--report",report,"--max-courses",8,"--max-starts",12,"--join-gap",2),
+        py("build_data.py","--osm",osm,"--dem",dem,"--name",cfg["resort"],"--out",js,"--json-out",data,"--report",report,"--max-courses",cfg["build"]["maxCourses"],"--max-starts",cfg["build"]["maxStarts"],"--join-gap",2),
         ["node","--check",str(js)],
         py("test_pipeline.py","--data",data,"--osm",osm,"--dem",dem),
     ]

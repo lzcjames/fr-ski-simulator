@@ -32,12 +32,17 @@ def sampler(g):
 
 
 def adapt(data, course_name):
-    if data['schemaVersion']!=2 or data['resort']!='Les Deux Alpes':
-        raise ValueError('expected Les Deux Alpes schema v2')
+    if data.get('schemaVersion')!=2 or not data.get('resort'):
+        raise ValueError('expected a named schema v2 resort')
     matches=[c for c in data['courses'] if c['n']==course_name and c['connected'] and not c['needsGradeReview']]
     if len(matches)!=1: raise ValueError('need one connected, unflagged course')
-    c=matches[0]; p=c['p']; x0,z0=p[0]; ex,ez=p[-1][0]-x0,p[-1][1]-z0
-    span=math.hypot(ex,ez); dx,dz=ex/span,ez/span
+    c=matches[0]; p=c['p']
+    if len(p)<2: raise ValueError('course too short')
+    x0,z0=p[0]; ex,ez=p[-1][0]-x0,p[-1][1]-z0
+    span=math.hypot(ex,ez)
+    if not math.isfinite(span) or span<10: raise ValueError('invalid or short route axis')
+    if not all(len(q)==2 and all(map(math.isfinite,q)) for q in p): raise ValueError('invalid course coordinates')
+    dx,dz=ex/span,ez/span
     def game(q):
         x,z=q[0]-x0,q[1]-z0
         return [-dz*x+dx*z,-(dx*x+dz*z)]
@@ -65,6 +70,20 @@ def adapt(data, course_name):
     # Forest/mask/buildings/POIs/streets/startPoints stay in real X/Z.
     out['integration']={'status':'data-only; not a playable build','primaryCourse':course_name,'legacyLongitudinalLength':L,'halfWidthEstimatedM':15,'duplicateGrids':len(data['grids'])==1,'gradingApplied':False,'warning':'No extended terrain; do not enable free travel until bounds and scene overrides are audited.'}
     return out
+
+
+def choose_axis(data, preferred=None):
+    """Use an explicitly configured axis, or first compatible unflagged candidate."""
+    if preferred is not None:
+        return adapt(data, preferred)
+    failures=[]
+    for c in data.get("courses",[]):
+        if not c.get("connected") or c.get("needsGradeReview"): continue
+        try:
+            return adapt(data,c["n"])
+        except ValueError as exc:
+            failures.append(c["n"]+": "+str(exc))
+    raise ValueError("No compatible course axis: "+"; ".join(failures))
 
 
 def main():

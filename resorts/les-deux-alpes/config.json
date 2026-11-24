@@ -27,5 +27,15 @@
     "Descente",
     "Valentin"
   ],
-  "skillCommit": "4f64120bb085d1dc8f8978b9cb65cf7e9e92fcd1"
+  "skillCommit": "4f64120bb085d1dc8f8978b9cb65cf7e9e92fcd1",
+  "build": {
+    "maxCourses": 8,
+    "maxStarts": 12
+  },
+  "preview": {
+    "primaryCourse": "Thuit 2",
+    "includeGradeReview": true,
+    "regionLabel": "FRANCE / OISANS",
+    "wetBelow": 1650
+  }
 }
