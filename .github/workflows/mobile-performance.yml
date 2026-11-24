@@ -10,6 +10,7 @@ on:
     paths:
       - '.github/workflows/mobile-performance.yml'
       - 'scripts/performance_probe.js'
+      - 'scripts/mobile_probe.js'
 permissions:
   contents: read
   actions: read
@@ -40,14 +41,7 @@ jobs:
         run: |
           git clone https://github.com/awoele/ski-resort-to-game.git .work/skill
           git -C .work/skill checkout --detach 4f64120bb085d1dc8f8978b9cb65cf7e9e92fcd1
-          python - <<'PY'
-          from pathlib import Path
-          source=Path('.work/skill/scripts/smoke_probe.js').read_text()
-          anchor='return result;'
-          assert source.count(anchor)==1
-          source=source.replace(anchor,Path('scripts/performance_probe.js').read_text()+'\n'+anchor)
-          Path('.work/mobile-probe.js').write_text(source)
-          PY
+          cp scripts/mobile_probe.js .work/mobile-probe.js
           CHROME=$(command -v google-chrome || command -v chromium)
           test -n "$CHROME"
           printf '#!/bin/bash\nexec "%s" --use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader "$@"\n' "$CHROME" > .work/chrome-software

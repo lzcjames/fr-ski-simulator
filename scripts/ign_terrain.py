@@ -45,6 +45,17 @@ def grid_request(cfg,step,padding,pr):
         raise ValueError("WMS request exceeds bounded test size")
     return (west,south,east,north),width,height
 
+def lambert93_alias(crs):
+    """Recognize only the observed WMS Lambert-93 alias with missing datum label."""
+    if crs is None or 'PROJCS["EPSG:2154"' not in crs.to_wkt():
+        return False
+    p=crs.to_dict()
+    expected={"lat_0":46.5,"lon_0":3,"lat_1":49,"lat_2":44,"x_0":700000,"y_0":6600000}
+    return (p.get("proj")=="lcc" and p.get("units")=="m"
+        and p.get("ellps") in ("WGS84","GRS80")
+        and all(k in p and abs(float(p[k])-v)<1e-8 for k,v in expected.items())
+        and not p.get("towgs84") and not p.get("nadgrids"))
+
 def inspect_tiff(raw,bbox,width,height,step,allow_untagged=False):
     import numpy as np
     from rasterio.io import MemoryFile
@@ -65,8 +76,9 @@ def inspect_tiff(raw,bbox,width,height,step,allow_untagged=False):
         untagged=ds.crs is None and ds.transform==Affine.identity()
         if untagged and not allow_untagged:
             raise ValueError("missing GeoTIFF georeferencing")
+        alias=not untagged and ds.crs!=CRS.from_epsg(2154) and lambert93_alias(ds.crs)
         if not untagged:
-            if ds.crs!=CRS.from_epsg(2154):
+            if ds.crs!=CRS.from_epsg(2154) and not alias:
                 raise ValueError("unexpected GeoTIFF CRS: "+json.dumps(actual))
             if max(abs(a-b) for a,b in zip(ds.bounds,bbox))>0.05 or max(abs(a-step) for a in ds.res)>0.05:
                 raise ValueError("GeoTIFF bounds or resolution mismatch: "+json.dumps(actual))
@@ -75,7 +87,7 @@ def inspect_tiff(raw,bbox,width,height,step,allow_untagged=False):
             raise ValueError("missing elevations; no fallback permitted")
         if float(values.min())< -100 or float(values.max())>5000 or float(values.max()-values.min())<50:
             raise ValueError("implausible alpine elevation values")
-        return {"dtype":ds.dtypes[0],"crs":str(ds.crs),"bounds":list(ds.bounds),"dimensions":[width,height],"pixelSize":list(ds.res),"range":[float(values.min()),float(values.max())],"georeferencing":"request-derived pending point checks" if untagged else "embedded"}
+        return {"dtype":ds.dtypes[0],"crs":str(ds.crs),"bounds":list(ds.bounds),"dimensions":[width,height],"pixelSize":list(ds.res),"range":[float(values.min()),float(values.max())],"georeferencing":"request-derived pending point checks" if untagged else ("Lambert-93 alias pending point checks" if alias else "embedded")}
 
 def verify_points(dem,pr,step):
     # Compare nine actual grid nodes to the independent point elevation endpoint.
@@ -108,7 +120,7 @@ def fetch_ign_layer(cfg,step,padding,skill,work,role):
     path=Path(work)/(role+"-ign.tif");path.write_bytes(raw)
     info=inspect_tiff(raw,bbox,width,height,step,allow_untagged=True)
     sample_path=path
-    if info["georeferencing"]=="request-derived pending point checks":
+    if info["georeferencing"]!="embedded":
         import rasterio
         from rasterio.transform import from_bounds
         sample_path=Path(work)/(role+"-georeferenced-ign.tif")
@@ -120,7 +132,7 @@ def fetch_ign_layer(cfg,step,padding,skill,work,role):
     dem=sample_raster(sample_path,CREDIT,cfg,step,padding,skill)
     check=verify_points(dem,pr,step)
     if info["georeferencing"]=="request-derived pending point checks":
-        info["georeferencing"]="request-derived; independent point checks passed"
+        info["georeferencing"]=info["georeferencing"].replace(" pending point checks","; independent point checks passed")
     meta=dem["_meta"]
     meta.update(requestedSource="ign-wms",sourceCounts={"ign-wms":len(dem["h"])},
         wms={"url":url,"layer":LAYER,"sha256":hashlib.sha256(raw).hexdigest(),"numericRaster":info},

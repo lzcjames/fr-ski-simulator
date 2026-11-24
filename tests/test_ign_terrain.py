@@ -6,7 +6,8 @@ sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"scripts"))
 import numpy as np
 from rasterio.io import MemoryFile
 from rasterio.transform import from_bounds
-from ign_terrain import inspect_tiff
+from ign_terrain import inspect_tiff, lambert93_alias
+from rasterio.crs import CRS
 
 def tiff(dtype="float32",count=1,crs="EPSG:2154",nodata=None,missing=False):
     bounds=(900000,6400000,900050,6400050)
@@ -20,6 +21,13 @@ def tiff(dtype="float32",count=1,crs="EPSG:2154",nodata=None,missing=False):
 class IgnTests(unittest.TestCase):
     def test_numeric(self):
         self.assertEqual(inspect_tiff(tiff(),(900000,6400000,900050,6400050),10,10,5)["dtype"],"float32")
+    def test_lambert_alias(self):
+        wkt='PROJCS["EPSG:2154",GEOGCS["unknown",DATUM["unnamed",SPHEROID["unretrievable - using WGS84",6378137,298.257223563]],PRIMEM["Greenwich",0],UNIT["degree",0.0174532925199433]],PROJECTION["Lambert_Conformal_Conic_2SP"],PARAMETER["latitude_of_origin",46.5],PARAMETER["central_meridian",3],PARAMETER["standard_parallel_1",49],PARAMETER["standard_parallel_2",44],PARAMETER["false_easting",700000],PARAMETER["false_northing",6600000],UNIT["metre",1],AXIS["Easting",EAST],AXIS["Northing",NORTH]]'
+        crs=CRS.from_wkt(wkt)
+        self.assertTrue(lambert93_alias(crs))
+        self.assertFalse(lambert93_alias(CRS.from_wkt(wkt.replace('central_meridian",3','central_meridian",4'))))
+        info=inspect_tiff(tiff(crs=crs),(900000,6400000,900050,6400050),10,10,5)
+        self.assertIn("Lambert-93 alias",info["georeferencing"])
     def test_reject_rgb(self):
         with self.assertRaises(ValueError): inspect_tiff(tiff(count=3),(900000,6400000,900050,6400050),10,10,5)
     def test_reject_missing(self):
