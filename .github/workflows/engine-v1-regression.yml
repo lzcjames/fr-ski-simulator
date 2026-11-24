@@ -1,0 +1,85 @@
+name: Engine v1 two-resort regression
+on:
+  workflow_dispatch:
+    inputs:
+      l2a_run:
+        description: Successful Les Deux Alpes geographic data run
+        default: '45467451777'
+        required: true
+      alpe_run:
+        description: Run containing Alpe d'Huez geographic data
+        default: '45492818325'
+        required: true
+  push:
+    paths:
+      - '.github/workflows/engine-v1-regression.yml'
+      - 'scripts/engine_v1.py'
+      - 'scripts/check_engine_bundle.py'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: python tests/test_engine_v1.py -v
+      - uses: actions/download-artifact@v4
+        with:
+          name: les-deux-alpes-resort-data
+          path: .work/l2a
+          run-id: ${{ inputs.l2a_run || '45467451777' }}
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: alpe-d-huez-resort-data
+          path: .work/alpe
+          run-id: ${{ inputs.alpe_run || '45492818325' }}
+          github-token: ${{ github.token }}
+      - name: Compile verified engine once and pack both resorts
+        run: |
+          python scripts/resolve_template.py --download --out .work/original.html
+          python scripts/engine_v1.py compile --template .work/original.html --out .work/shared.html
+          python scripts/engine_v1.py pack --engine .work/shared.html --config resorts/les-deux-alpes/config.json --data .work/l2a/resort-data.json --out .work/games/les-deux-alpes.html
+          python scripts/engine_v1.py pack --engine .work/shared.html --config resorts/alpe-d-huez/config.json --data .work/alpe/resort-data.json --out .work/games/alpe-d-huez.html
+          python scripts/check_engine_bundle.py --engine .work/shared.html --game .work/games/les-deux-alpes.html --config resorts/les-deux-alpes/config.json --data .work/l2a/resort-data.json
+          python scripts/check_engine_bundle.py --engine .work/shared.html --game .work/games/alpe-d-huez.html --config resorts/alpe-d-huez/config.json --data .work/alpe/resort-data.json
+      - name: Configure upstream QA with software GPU on Linux runner
+        run: |
+          git clone https://github.com/awoele/ski-resort-to-game.git .work/skill
+          git -C .work/skill checkout --detach 4f64120bb085d1dc8f8978b9cb65cf7e9e92fcd1
+          CHROME=$(command -v google-chrome || command -v chromium)
+          test -n "$CHROME"
+          printf '#!/bin/bash\nexec "%s" --use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader "$@"\n' "$CHROME" > .work/chrome-software
+          chmod +x .work/chrome-software
+          echo "CHROME_PATH=$PWD/.work/chrome-software" >> "$GITHUB_ENV"
+      - name: Les Deux Alpes WebGL2 smoke
+        id: l2a
+        continue-on-error: true
+        run: node .work/skill/scripts/qa_html.mjs --html .work/games/les-deux-alpes.html --out .work/qa/l2a --width 960 --height 540 --backend webgl2 --timeout 90 --probe .work/skill/scripts/smoke_probe.js
+      - name: Alpe d'Huez WebGL2 smoke
+        id: alpe
+        continue-on-error: true
+        run: node .work/skill/scripts/qa_html.mjs --html .work/games/alpe-d-huez.html --out .work/qa/alpe --width 960 --height 540 --backend webgl2 --timeout 90 --probe .work/skill/scripts/smoke_probe.js
+      - name: Upload regression outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: engine-v1-two-resort-regression
+          path: |
+            .work/games/
+            .work/qa/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Enforce smoke test results
+        if: always()
+        run: |
+          test "${{ steps.l2a.outcome }}" = success
+          test "${{ steps.alpe.outcome }}" = success
