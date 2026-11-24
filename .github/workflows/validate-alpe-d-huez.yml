@@ -1,0 +1,16 @@
+name: Validate Alpe d'Huez integration
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'resorts/alpe-d-huez/config.json'
+      - '.github/workflows/validate-alpe-d-huez.yml'
+permissions:
+  contents: read
+jobs:
+  integration:
+    uses: ./.github/workflows/generate-resort.yml
+    with:
+      resort: alpe-d-huez
+      dem_source: profile
+      data_only: false

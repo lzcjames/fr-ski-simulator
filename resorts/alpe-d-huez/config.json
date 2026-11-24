@@ -1,0 +1,33 @@
+{
+  "resort": "Alpe d'Huez",
+  "slug": "alpe-d-huez",
+  "sector": "Signal – Les Jeux – Alpe d'Huez 1860",
+  "status": "candidate sector; requires real data, route completeness and browser QA",
+  "bbox": [
+    6.049,
+    45.084,
+    6.091,
+    45.113
+  ],
+  "origin": [
+    6.07,
+    45.0985
+  ],
+  "dem": {
+    "source": "terrarium",
+    "step": 30,
+    "zoom": 13,
+    "padding": 150
+  },
+  "skillCommit": "4f64120bb085d1dc8f8978b9cb65cf7e9e92fcd1",
+  "build": {
+    "maxCourses": 8,
+    "maxStarts": 12
+  },
+  "preview": {
+    "primaryCourse": null,
+    "includeGradeReview": false,
+    "regionLabel": "FRANCE / OISANS",
+    "wetBelow": 1650
+  }
+}

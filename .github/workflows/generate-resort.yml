@@ -1,5 +1,16 @@
 name: Generate resort preview
 on:
+  workflow_call:
+    inputs:
+      resort:
+        required: true
+        type: string
+      dem_source:
+        type: string
+        default: profile
+      data_only:
+        type: boolean
+        default: true
   workflow_dispatch:
     inputs:
       resort:
@@ -13,7 +24,7 @@ on:
         options: [profile, terrarium, ign]
         default: profile
       data_only:
-        description: Only prepare real data (until template is committed)
+        description: Only prepare real data; disable to build and test HTML
         type: boolean
         default: true
   push:
@@ -35,7 +46,7 @@ jobs:
       - run: python -m compileall -q scripts
       - run: python tests/test_generator.py -v
   generate:
-    if: github.event_name == 'workflow_dispatch'
+    if: inputs.resort != ''
     needs: unit-tests
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -51,21 +62,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Validate resort profile and locate engine
+      - name: Validate resort profile
         run: |
           CONFIG=$(python scripts/resort_config.py "$RESORT")
           echo "CONFIG=$CONFIG" >> "$GITHUB_ENV"
           SHA=$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["skillCommit"])' "$CONFIG")
           echo "SKILL_SHA=$SHA" >> "$GITHUB_ENV"
-          if [ "$DATA_ONLY" != true ]; then
-            if test -f engine/avoriaz-offline.html; then
-              echo "TEMPLATE=engine/avoriaz-offline.html" >> "$GITHUB_ENV"
-            elif test -f avoriaz-offline.html; then
-              echo "TEMPLATE=avoriaz-offline.html" >> "$GITHUB_ENV"
-            else
-              echo "Authorized template required for HTML generation"; exit 1
-            fi
-          fi
       - name: Checkout the profile's pinned upstream Skill
         run: |
           git clone https://github.com/awoele/ski-resort-to-game.git .work/skill
@@ -88,6 +90,18 @@ jobs:
             .work/data/data-report.json
           if-no-files-found: error
           retention-days: 14
+      - name: Resolve verified engine template
+        if: inputs.data_only == false
+        run: |
+          mkdir -p .work/engine
+          if test -f engine/avoriaz-offline.html; then
+            python scripts/resolve_template.py --input engine/avoriaz-offline.html --out .work/engine/template.html
+          elif test -f avoriaz-offline.html; then
+            python scripts/resolve_template.py --input avoriaz-offline.html --out .work/engine/template.html
+          else
+            python scripts/resolve_template.py --download --out .work/engine/template.html
+          fi
+          echo "TEMPLATE=.work/engine/template.html" >> "$GITHUB_ENV"
       - name: Build self-contained engineering preview
         if: inputs.data_only == false
         run: python scripts/build_game.py --config "$CONFIG" --template "$TEMPLATE" --data .work/data/resort-data.json --out ".work/output/$RESORT.html"
