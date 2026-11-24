@@ -1,0 +1,64 @@
+name: Engine preview QA
+on:
+  workflow_dispatch:
+    inputs:
+      data_run_id:
+        description: Successful Prepare Les Deux Alpes data run ID
+        required: true
+        default: '45467451777'
+  push:
+    paths:
+      - 'engine/avoriaz-offline.html'
+      - 'avoriaz-offline.html'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Locate authorized template
+        run: |
+          if test -f engine/avoriaz-offline.html; then
+            echo "TEMPLATE=engine/avoriaz-offline.html" >> "$GITHUB_ENV"
+          elif test -f avoriaz-offline.html; then
+            echo "TEMPLATE=avoriaz-offline.html" >> "$GITHUB_ENV"
+          else
+            echo "Upload authorized avoriaz-offline.html first"; exit 1
+          fi
+      - uses: actions/download-artifact@v4
+        with:
+          name: les-deux-alpes-resort-data
+          path: .work/data
+          run-id: ${{ inputs.data_run_id || '45467451777' }}
+          github-token: ${{ github.token }}
+      - name: Checkout QA tools
+        run: |
+          git clone https://github.com/awoele/ski-resort-to-game.git .work/skill
+          git -C .work/skill checkout --detach 4f64120bb085d1dc8f8978b9cb65cf7e9e92fcd1
+      - name: Build preview
+        run: |
+          python scripts/test_legacy_adapter.py .work/data/resort-data.json
+          python scripts/legacy_adapter.py --data .work/data/resort-data.json --out .work/legacy.json
+          python scripts/build_preview.py --template "$TEMPLATE" --data .work/legacy.json --out .work/les-deux-alpes-preview.html
+      - name: WebGL2 desktop smoke test
+        run: |
+          node .work/skill/scripts/qa_html.mjs --html .work/les-deux-alpes-preview.html --out .work/qa-webgl2 --width 1440 --height 900 --backend webgl2 --probe .work/skill/scripts/smoke_probe.js
+      - name: Upload preview and QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: engine-preview-qa
+          path: |
+            .work/les-deux-alpes-preview.html
+            .work/qa-webgl2/
+          if-no-files-found: warn
+          retention-days: 14
