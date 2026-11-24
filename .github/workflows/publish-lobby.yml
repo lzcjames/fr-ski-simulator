@@ -1,0 +1,58 @@
+name: Publish validated lobby to GitHub Pages
+on:
+  workflow_dispatch:
+    inputs:
+      lobby_run:
+        description: Successful Build multi-resort lobby workflow run ID
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify source workflow completed successfully
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ inputs.lobby_run }}
+        run: |
+          [[ "$RUN_ID" =~ ^[0-9]+$ ]]
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID" > run.json
+          python - <<'PY'
+          import json,os
+          r=json.load(open('run.json'))
+          assert r['status']=='completed' and r['conclusion']=='success'
+          assert r['path'].split('@')[0]=='.github/workflows/build-lobby.yml'
+          assert r['head_repository']['full_name']==os.environ['GITHUB_REPOSITORY']
+          assert r['head_branch']=='master'
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          name: fr-ski-simulator-lobby
+          path: .work/site
+          run-id: ${{ inputs.lobby_run }}
+          github-token: ${{ github.token }}
+      - run: python scripts/check_lobby.py .work/site
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .work/site
+  deploy:
+    needs: prepare
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy static site
+        id: deployment
+        uses: actions/deploy-pages@v4
