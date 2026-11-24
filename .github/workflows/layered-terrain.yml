@@ -1,0 +1,72 @@
+name: Layered terrain integration
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/layered_terrain.py'
+      - 'tests/test_layered_terrain.py'
+      - '.github/workflows/layered-terrain.yml'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - resort: les-deux-alpes
+            data_run: '45467451777'
+          - resort: alpe-d-huez
+            data_run: '45492818325'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      RESORT: ${{ matrix.resort }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: python tests/test_layered_terrain.py -v
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.resort }}-resort-data
+          path: .work/input
+          run-id: ${{ matrix.data_run }}
+          github-token: ${{ github.token }}
+      - name: Build three genuine terrain layers
+        run: |
+          git clone https://github.com/awoele/ski-resort-to-game.git .work/skill
+          git -C .work/skill checkout --detach 4f64120bb085d1dc8f8978b9cb65cf7e9e92fcd1
+          python -m pip install Pillow
+          python scripts/layered_terrain.py --config "resorts/$RESORT/config.json" --skill .work/skill --osm .work/input/osm.json --work .work/terrain
+      - name: Build shared-engine game and check bundle
+        run: |
+          python scripts/resolve_template.py --download --out .work/original.html
+          python scripts/engine_v1.py compile --template .work/original.html --out .work/shared.html
+          python scripts/engine_v1.py pack --engine .work/shared.html --config "resorts/$RESORT/config.json" --data .work/terrain/layered-data.json --out ".work/output/$RESORT.html"
+          python scripts/check_engine_bundle.py --engine .work/shared.html --game ".work/output/$RESORT.html" --config "resorts/$RESORT/config.json" --data .work/terrain/layered-data.json
+      - name: WebGL2 software smoke
+        run: |
+          CHROME=$(command -v google-chrome || command -v chromium)
+          test -n "$CHROME"
+          printf '#!/bin/bash\nexec "%s" --use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader "$@"\n' "$CHROME" > .work/chrome-software
+          chmod +x .work/chrome-software
+          CHROME_PATH="$PWD/.work/chrome-software" node .work/skill/scripts/qa_html.mjs --html ".work/output/$RESORT.html" --out .work/qa --width 960 --height 540 --backend webgl2 --timeout 90 --probe .work/skill/scripts/smoke_probe.js
+      - name: Preserve terrain and QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.resort }}-layered-preview
+          path: |
+            .work/terrain/layered-data.json
+            .work/terrain/layers-report.json
+            .work/terrain/data-report.json
+            .work/output/
+            .work/qa/
+          if-no-files-found: warn
+          retention-days: 14
