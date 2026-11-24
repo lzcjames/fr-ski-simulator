@@ -97,7 +97,7 @@ Python 的核心工作之一就是替换这里面的数据，同时修改原游�
 
 v0.2 已写入八条候选路线：Demoiselles、Petites Crêtes、Clot des Fonds、Jandri 1、Thuit 2、Vallons du Diable、Diable 1 和 Diable 2。
 
-**当前仍是工程测试版。** 真实数据与 JavaScript 语法已通过检查，但实际游玩尚未验证，Demoiselles 的坡度也需要复核。原版模板尚未上传仓库，云端游戏测试仍待执行。
+**当前仍是工程测试版。** 真实数据与 JavaScript 语法已通过检查，但实际游玩尚未验证，Demoiselles 的坡度也需要复核。这是早期 v0.2 的记录；后续版本已实现自动取得并校验原版模板。
 
 ## 六、最终目标
 
@@ -112,9 +112,9 @@ flowchart TD
 
 把通用游戏引擎与雪场专属数据逐渐分离。
 
-以后制作 Alpe d'Huez、Val Thorens、Tignes 等其他法国雪场时，希望主要通过更换地理数据和配置来完成，而不用每次重新编写整个游戏。通用生成器的第一阶段已完成：新增雪场先在 `resorts/` 下建立自己的 `config.json`（名称、真实地图范围、数据来源等），再通过统一的 [build_game.py](scripts/build_game.py) 生成 HTML，或在 [GitHub Actions](https://github.com/lzcjames/fr-ski-simulator/actions) 选择 `Generate resort preview`。目前 Les Deux Alpes 和 Alpe d'Huez 已通过同一份 Engine v1 通用模板生成各自的 HTML。两个雪场的真实数据及 JavaScript 语法均通过检查，但浏览器实际游玩验证尚未完成。新增雪场仍需先配置真实地图范围。
+以后制作 Alpe d'Huez、Val Thorens、Tignes 等其他法国雪场时，希望主要通过更换地理数据和配置来完成，而不用每次重新编写整个游戏。通用生成器的第一阶段已完成：新增雪场先在 `resorts/` 下建立自己的 `config.json`（名称、真实地图范围、数据来源等），再通过统一的 [build_game.py](scripts/build_game.py) 生成 HTML，或在 [GitHub Actions](https://github.com/lzcjames/fr-ski-simulator/actions) 选择 `Generate resort preview`。目前 Les Deux Alpes 和 Alpe d'Huez 已通过同一份通用引擎生成各自的 HTML。Engine v1.1 的 10/20/60 米独立 Terrarium 地形与 WebGL2 基础操作测试均已通过；完整雪道滑行及真实手机验证仍待完成。IGN 5/20/60 米地形接入正在验证，尚未替代已通过测试的版本。新增雪场仍需先配置真实地图范围。
 
-引擎优化说明：[Engine v1](docs/engine-v1.md)。
+引擎优化说明：[Engine v1](docs/engine-v1.md) · [分层地形](docs/engine-v1.1-terrain.md) · [IGN 试验](docs/engine-v1.2-ign.md) · [手机性能测试](docs/mobile-performance.md)。
 
 详细方法见 [多雪场生成器](docs/multi-resort-generator.md)。
 
