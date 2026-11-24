@@ -44,6 +44,10 @@ def compile_engine(original):
     # These are resort-specific keys, not general user preferences (language, suit, view).
     src=replace_exact(src,js("frski-engine-sentinel-preview-pb"),"FR_RESORT.pbKey",2)
     src=replace_exact(src,js("frski-engine-sentinel-preview-onboard"),"FR_RESORT.onboardKey",2)
+    # Remove stale localized branding entries, preserving all ordinary UI strings.
+    for key in (marker+" · 1 ROUTES",marker+" · Cold Smoke / Avoriaz",marker+" · Mountain map",PREFIX+"REGION_SENTINEL__","1 ROUTES · FRENCH ALPS"):
+        src,n=re.subn(re.escape(js(key))+r':"(?:[^"\\]|\\.)*",',"",src)
+        if n!=7: raise ValueError("locale branding anchor count mismatch: "+key)
     # Replace remaining visible HTML, not JS code.
     src=replace_exact(src,"<title>"+marker+" · Cold Smoke / Avoriaz</title>","<title>"+slot("TITLE")+"</title>")
     src=replace_exact(src,">"+marker+"<",">"+slot("NAME")+"<",2)
