@@ -49,9 +49,10 @@ jobs:
           python scripts/test_legacy_adapter.py .work/data/resort-data.json
           python scripts/legacy_adapter.py --data .work/data/resort-data.json --out .work/legacy.json
           python scripts/build_preview.py --template "$TEMPLATE" --data .work/legacy.json --out .work/les-deux-alpes-preview.html
+          python scripts/expand_preview.py --preview .work/les-deux-alpes-preview.html --data .work/legacy.json --out .work/les-deux-alpes-multiroute-preview.html
       - name: WebGL2 desktop smoke test
         run: |
-          node .work/skill/scripts/qa_html.mjs --html .work/les-deux-alpes-preview.html --out .work/qa-webgl2 --width 1440 --height 900 --backend webgl2 --probe .work/skill/scripts/smoke_probe.js
+          node .work/skill/scripts/qa_html.mjs --html .work/les-deux-alpes-multiroute-preview.html --out .work/qa-webgl2 --width 1440 --height 900 --backend webgl2 --probe .work/skill/scripts/smoke_probe.js
       - name: Upload preview and QA evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -59,6 +60,7 @@ jobs:
           name: engine-preview-qa
           path: |
             .work/les-deux-alpes-preview.html
+            .work/les-deux-alpes-multiroute-preview.html
             .work/qa-webgl2/
           if-no-files-found: warn
           retention-days: 14
