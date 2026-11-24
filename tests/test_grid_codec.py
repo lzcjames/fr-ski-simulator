@@ -20,7 +20,7 @@ class CodecTests(unittest.TestCase):
         self.assertEqual(packed["codec"],CODEC)
         self.assertEqual(decode_grid(packed),raw)
         js=(Path(__file__).resolve().parents[1]/"scripts/grid_codec.js").read_text()
-        out=subprocess.check_output(["node","-e",js+"\\nconsole.log(JSON.stringify(frRestoreHeights(JSON.parse(require('fs').readFileSync(0,'utf8')))))"],input=json.dumps(packed),text=True)
+        out=subprocess.check_output(["node","-e",js+"\nconsole.log(JSON.stringify(frRestoreHeights(JSON.parse(require('fs').readFileSync(0,'utf8')))))"],input=json.dumps(packed),text=True)
         self.assertEqual(json.loads(out),raw)
         self.assertEqual(decode_data({"grids":[packed],"gridRefs":[0,0]})["grids"],[raw,raw])
     def test_no_expansion(self):
