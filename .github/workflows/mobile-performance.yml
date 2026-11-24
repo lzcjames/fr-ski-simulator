@@ -1,0 +1,80 @@
+name: Mobile and frame cadence baseline
+on:
+  workflow_dispatch:
+    inputs:
+      data_run:
+        description: Successful layered-terrain workflow run
+        default: '45496078440'
+        required: true
+  push:
+    paths:
+      - '.github/workflows/mobile-performance.yml'
+      - 'scripts/performance_probe.js'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  baseline:
+    strategy:
+      fail-fast: false
+      matrix:
+        resort: [les-deux-alpes, alpe-d-huez]
+        viewport: [portrait, landscape]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      RESORT: ${{ matrix.resort }}
+      VIEWPORT: ${{ matrix.viewport }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.resort }}-layered-preview
+          path: .work/input
+          run-id: ${{ inputs.data_run || '45496078440' }}
+          github-token: ${{ github.token }}
+      - name: Prepare upstream probe and software GPU
+        run: |
+          git clone https://github.com/awoele/ski-resort-to-game.git .work/skill
+          git -C .work/skill checkout --detach 4f64120bb085d1dc8f8978b9cb65cf7e9e92fcd1
+          python - <<'PY'
+          from pathlib import Path
+          source=Path('.work/skill/scripts/smoke_probe.js').read_text()
+          anchor='return result;'
+          assert source.count(anchor)==1
+          source=source.replace(anchor,Path('scripts/performance_probe.js').read_text()+'\n'+anchor)
+          Path('.work/mobile-probe.js').write_text(source)
+          PY
+          CHROME=$(command -v google-chrome || command -v chromium)
+          test -n "$CHROME"
+          printf '#!/bin/bash\nexec "%s" --use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader "$@"\n' "$CHROME" > .work/chrome-software
+          chmod +x .work/chrome-software
+          echo "CHROME_PATH=$PWD/.work/chrome-software" >> "$GITHUB_ENV"
+      - name: Mobile browser smoke and frame cadence
+        run: |
+          GAME=$(find .work/input -type f -name "$RESORT.html")
+          test -f "$GAME"
+          if [ "$VIEWPORT" = portrait ]; then WIDTH=390; HEIGHT=844; else WIDTH=844; HEIGHT=390; fi
+          node .work/skill/scripts/qa_html.mjs --html "$GAME" --out .work/mobile-qa --width "$WIDTH" --height "$HEIGHT" --mobile --backend webgl2 --timeout 180 --probe .work/mobile-probe.js
+      - name: Print diagnostic report
+        if: always()
+        run: |
+          if test -f .work/mobile-qa/report.json; then
+            python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('.work/mobile-qa/report.json').read_text())
+          print(json.dumps({k:r.get(k) for k in ('passed','readyMs','game','probe','metrics','error','exceptions','consoleErrors')},indent=2))
+          PY
+          fi
+      - name: Preserve mobile QA
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.resort }}-${{ matrix.viewport }}-baseline
+          path: .work/mobile-qa/
+          if-no-files-found: warn
+          retention-days: 14
