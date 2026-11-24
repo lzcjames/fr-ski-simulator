@@ -9,23 +9,25 @@ from pathlib import Path
 from build_game import prepare_data
 from engine_v1 import pack_engine, validate_slots
 from resort_config import load_config
+from grid_codec import decode_data
 
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     for key in ("engine","game","config","data"):
         p.add_argument("--"+key,type=Path,required=True)
+    p.add_argument("--compact-heights",action="store_true")
     a=p.parse_args()
     engine=a.engine.read_text(encoding="utf-8")
     validate_slots(engine)
     cfg=load_config(a.config)
     expected=prepare_data(json.loads(a.data.read_text(encoding="utf-8")),cfg)
     src=a.game.read_text(encoding="utf-8")
-    if src!=pack_engine(engine,expected,cfg):
+    if src!=pack_engine(engine,expected,cfg,a.compact_heights):
         raise ValueError("packed HTML differs from deterministic rebuild")
     meta=json.loads(re.search(r"^const FR_RESORT = (.*);$",src,re.M).group(1))
     actual=json.loads(re.search(r"^const AVZ_DATA = (.*);$",src,re.M).group(1))
-    if "gridRefs" in actual:
-        actual["grids"]=[actual["grids"][i] for i in actual.pop("gridRefs")]
+    encoded_count=sum("codec" in g for g in actual["grids"])
+    actual=decode_data(actual)
     if actual!=expected:
         raise ValueError("packed data changed after grid restoration")
     if meta["pbKey"]!=cfg["slug"]+"-preview-pb" or meta["onboardKey"]!=cfg["slug"]+"-preview-onboard":
@@ -38,6 +40,6 @@ def main():
             file=Path(tmp)/f"inline-{i}.js"
             file.write_text(code,encoding="utf-8")
             subprocess.run(["node","--check",str(file)],check=True)
-    print(json.dumps({"resort":meta["name"],"routes":len(actual["courses"]),"grids":len(actual["grids"]),"bytes":a.game.stat().st_size,"engine_sha256":hashlib.sha256(a.engine.read_bytes()).hexdigest(),"status":"PASS: deterministic pack, lossless data, storage namespace, JavaScript syntax"},ensure_ascii=False))
+    print(json.dumps({"resort":meta["name"],"routes":len(actual["courses"]),"encodedGrids":encoded_count,"grids":len(actual["grids"]),"bytes":a.game.stat().st_size,"engine_sha256":hashlib.sha256(a.engine.read_bytes()).hexdigest(),"status":"PASS: deterministic pack, lossless data, storage namespace, JavaScript syntax"},ensure_ascii=False))
 
 if __name__=="__main__": main()

@@ -13,6 +13,7 @@ import re
 from pathlib import Path
 from build_game import js, patch, prepare_data
 from resort_config import load_config
+from grid_codec import encode_grid
 
 VERSION = 1
 PREFIX = "__FRSKI_V1_"
@@ -34,6 +35,7 @@ def compile_engine(original):
     src=patch(original,raw,cfg)
     old="const AVZ_DATA = "+js(raw)+";"
     src=replace_exact(src,old,"const FR_RESORT = "+slot("CONFIG")+";\nconst AVZ_DATA = "+slot("DATA")+";\n"
+        +Path(__file__).with_name("grid_codec.js").read_text(encoding="utf-8")+"\nAVZ_DATA.grids=AVZ_DATA.grids.map(frRestoreHeights);\n"
         +"if (AVZ_DATA.gridRefs) { const g=AVZ_DATA.grids; AVZ_DATA.grids=AVZ_DATA.gridRefs.map(i=>g[i]); delete AVZ_DATA.gridRefs; }")
     src=replace_exact(src,"document.title = L.t('"+marker+" · Cold Smoke / Avoriaz');","document.title = FR_RESORT.title;")
     src=replace_exact(src,'resort: '+js(marker)+', wetBelow: -987654','resort: FR_RESORT.name, wetBelow: FR_RESORT.wetBelow')
@@ -80,7 +82,7 @@ def compact_grids(data):
         out["grids"]=unique;out["gridRefs"]=refs
     return out
 
-def pack_engine(compiled, data, cfg):
+def pack_engine(compiled, data, cfg, compact_heights=False):
     validate_slots(compiled)
     if data["resort"]!=cfg["resort"]:
         raise ValueError("resort name mismatch")
@@ -92,7 +94,11 @@ def pack_engine(compiled, data, cfg):
     sources=data.get("sources",{}).get("dem",{}).get("sourceCounts",{})
     dem=" / ".join(sorted(sources)) or "DEM source unreported"
     warning=f"{name} · {count_label} · ENGINE PREVIEW · {data['grids'][0]['step']:g} m grid · OSM / {dem} · Avoriaz / Cold Smoke adaptation · Not for navigation"
-    values={"DATA":js(compact_grids(data)),"CONFIG":js(metadata),"NAME":html.escape(name,quote=True),"TITLE":html.escape(title,quote=True),"REGION":html.escape(cfg["preview"]["regionLabel"],quote=True),"COUNT":count_label,"WARNING":html.escape(warning,quote=True)}
+    packed=compact_grids(data)
+    if compact_heights:
+        if "function frRestoreHeights(" not in compiled: raise ValueError("engine lacks grid decoder")
+        packed["grids"]=[encode_grid(g) for g in packed["grids"]]
+    values={"DATA":js(packed),"CONFIG":js(metadata),"NAME":html.escape(name,quote=True),"TITLE":html.escape(title,quote=True),"REGION":html.escape(cfg["preview"]["regionLabel"],quote=True),"COUNT":count_label,"WARNING":html.escape(warning,quote=True)}
     # Substitute in a single pass: no accidental replacement inside resort data.
     return re.sub(PREFIX+r"([A-Z_]+)__",lambda m:values[m.group(1)],compiled)
 
@@ -104,6 +110,7 @@ def main():
     c.add_argument("--out",type=Path,required=True)
     b=sub.add_parser("pack")
     for x in ("engine","config","data","out"): b.add_argument("--"+x,type=Path,required=True)
+    b.add_argument("--compact-heights",action="store_true")
     a=p.parse_args()
     inputs=[a.template] if a.action=="compile" else [a.engine,a.config,a.data]
     if a.out.resolve() in [f.resolve() for f in inputs]:
@@ -114,7 +121,7 @@ def main():
     else:
         cfg=load_config(a.config)
         data=prepare_data(json.loads(a.data.read_text(encoding="utf-8")),cfg)
-        result=pack_engine(a.engine.read_text(encoding="utf-8"),data,cfg)
+        result=pack_engine(a.engine.read_text(encoding="utf-8"),data,cfg,a.compact_heights)
     a.out.parent.mkdir(parents=True,exist_ok=True)
     a.out.write_text(result,encoding="utf-8")
     print(json.dumps({"action":a.action,"engineVersion":VERSION,"output":str(a.out),"bytes":a.out.stat().st_size,"sha256":hashlib.sha256(a.out.read_bytes()).hexdigest()}))
