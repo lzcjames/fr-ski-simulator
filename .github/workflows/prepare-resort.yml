@@ -1,0 +1,66 @@
+name: Prepare Les Deux Alpes data
+on:
+  workflow_dispatch:
+    inputs:
+      dem_source:
+        description: Elevation source (30 m smoke test first)
+        type: choice
+        options:
+          - terrarium
+          - ign
+        default: terrarium
+      grid_step:
+        description: Output grid spacing in metres (not native accuracy)
+        type: choice
+        options:
+          - '30'
+          - '20'
+        default: '30'
+  push:
+    paths:
+      - '.github/workflows/prepare-resort.yml'
+      - 'scripts/prepare_resort.py'
+      - 'resorts/les-deux-alpes/config.json'
+permissions:
+  contents: read
+concurrency:
+  group: resort-data-les-deux-alpes
+  cancel-in-progress: false
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Checkout pinned upstream Skill
+        run: |
+          git clone https://github.com/awoele/ski-resort-to-game.git .work/skill
+          git -C .work/skill checkout --detach 4f64120bb085d1dc8f8978b9cb65cf7e9e92fcd1
+          python -m pip install Pillow
+      - name: Check build scripts
+        run: |
+          python -m py_compile scripts/prepare_resort.py scripts/audit_template.py
+          python scripts/prepare_resort.py --skill .work/skill --work .work/dry-run --dry-run
+      - name: Fetch and validate real resort data
+        env:
+          DEM_SOURCE: ${{ inputs.dem_source || 'terrarium' }}
+          GRID_STEP: ${{ inputs.grid_step || '30' }}
+        run: python scripts/prepare_resort.py --skill .work/skill --work .work/les-deux-alpes --source "$DEM_SOURCE" --step "$GRID_STEP"
+      - name: Publish validated data and provenance
+        uses: actions/upload-artifact@v4
+        with:
+          name: les-deux-alpes-resort-data
+          path: |
+            .work/les-deux-alpes/osm.json
+            .work/les-deux-alpes/dem.json
+            .work/les-deux-alpes/resort-data.json
+            .work/les-deux-alpes/resort-data.js
+            .work/les-deux-alpes/data-report.json
+          if-no-files-found: error
+          retention-days: 14
