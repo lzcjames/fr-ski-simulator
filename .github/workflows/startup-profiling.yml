@@ -1,0 +1,111 @@
+name: Startup profiling A-B
+on:
+  workflow_dispatch:
+    inputs:
+      data_run:
+        description: IGN compact mobile workflow run with validated game artifacts
+        default: '45505895867'
+        required: true
+  push:
+    paths:
+      - '.github/workflows/startup-profiling.yml'
+      - 'scripts/engine_performance.py'
+      - 'scripts/startup_probe.js'
+      - 'scripts/check_performance_patch.py'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  profile:
+    strategy:
+      fail-fast: false
+      matrix:
+        resort: [les-deux-alpes, alpe-d-huez]
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      RESORT: ${{ matrix.resort }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.resort }}-portrait-ign-compact
+          path: .work/input
+          run-id: ${{ inputs.data_run || '45505895867' }}
+          github-token: ${{ github.token }}
+      - name: Instrument validated compact game
+        run: |
+          GAME=$(find .work/input -type f -name "$RESORT.html")
+          test -f "$GAME"
+          python scripts/engine_performance.py --input "$GAME" --out ".work/profiled/$RESORT.html"
+          python scripts/check_performance_patch.py --input "$GAME" --output ".work/profiled/$RESORT.html"
+      - name: Prepare pinned browser QA and profile query
+        run: |
+          git clone https://github.com/awoele/ski-resort-to-game.git .work/skill
+          git -C .work/skill checkout --detach 4f64120bb085d1dc8f8978b9cb65cf7e9e92fcd1
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('.work/skill/scripts/qa_html.mjs')
+          s=p.read_text()
+          anchor="const url = pathToFileURL(file);"
+          assert s.count(anchor)==1
+          p.write_text(s.replace(anchor,anchor+"\nurl.searchParams.set('frprofile','1'); url.searchParams.set('quality','1'); if(process.env.FR_LIGHT==='1') url.searchParams.set('frlight','1');"))
+          probe=Path('.work/skill/scripts/smoke_probe.js').read_text()
+          anchor='return result;'
+          assert probe.count(anchor)==1
+          Path('.work/profile-probe.js').write_text(probe.replace(anchor,Path('scripts/startup_probe.js').read_text()+'\n'+anchor))
+          PY
+          CHROME=$(command -v google-chrome || command -v chromium)
+          test -n "$CHROME"
+          printf '#!/bin/bash\nexec "%s" --use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader "$@"\n' "$CHROME" > .work/chrome-software
+          chmod +x .work/chrome-software
+          echo "CHROME_PATH=$PWD/.work/chrome-software" >> "$GITHUB_ENV"
+      - name: Original quality startup baseline
+        id: baseline
+        continue-on-error: true
+        env:
+          FR_LIGHT: '0'
+        run: node .work/skill/scripts/qa_html.mjs --html ".work/profiled/$RESORT.html" --out .work/qa/original --width 960 --height 540 --backend webgl2 --timeout 180 --probe .work/profile-probe.js
+      - name: Opt-in lightweight startup
+        id: light
+        continue-on-error: true
+        env:
+          FR_LIGHT: '1'
+        run: node .work/skill/scripts/qa_html.mjs --html ".work/profiled/$RESORT.html" --out .work/qa/light --width 960 --height 540 --backend webgl2 --timeout 180 --probe .work/profile-probe.js
+      - name: Compare paired startup times and stage costs
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for mode in ('original','light'):
+              p=Path('.work/qa')/mode/'report.json'
+              if not p.exists():continue
+              r=json.loads(p.read_text())
+              rows.append({'mode':mode,'passed':r.get('passed'),'readyMs':r.get('readyMs'),'boot':(r.get('probe') or {}).get('boot'),'error':r.get('error')})
+          print(json.dumps(rows,indent=2))
+          Path('.work/qa').mkdir(exist_ok=True)
+          Path('.work/qa/comparison.json').write_text(json.dumps(rows,indent=2))
+          PY
+      - name: Preserve profile and visual evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.resort }}-startup-profile
+          path: |
+            .work/profiled/
+            .work/qa/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Enforce both browser tests
+        if: always()
+        run: |
+          test "${{ steps.baseline.outcome }}" = success
+          test "${{ steps.light.outcome }}" = success
