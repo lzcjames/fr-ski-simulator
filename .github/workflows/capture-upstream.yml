@@ -1,0 +1,22 @@
+name: Capture upstream Avoriaz snapshot
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/capture-upstream.yml'
+      - 'scripts/capture_upstream.py'
+permissions:
+  contents: read
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: python scripts/capture_upstream.py --out .work/upstream
+      - uses: actions/upload-artifact@v4
+        with:
+          name: avoriaz-upstream-review
+          path: .work/upstream/
+          if-no-files-found: error
+          retention-days: 14
