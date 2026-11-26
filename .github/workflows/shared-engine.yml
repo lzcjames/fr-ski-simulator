@@ -1,0 +1,75 @@
+name: Shared online engine cache
+on:
+  workflow_dispatch:
+    inputs:
+      lobby_run:
+        description: Successful Build multi-resort lobby run
+        default: '45507830982'
+        required: true
+  push:
+    paths:
+      - 'scripts/build_shared_site.py'
+      - 'scripts/check_shared_cache.mjs'
+      - 'tests/test_shared_site.py'
+      - '.github/workflows/shared-engine.yml'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Confirm validated lobby source
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ inputs.lobby_run || '45507830982' }}
+        run: |
+          [[ "$RUN_ID" =~ ^[0-9]+$ ]]
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID" > .source-run.json
+          python - <<'PY'
+          import json,os
+          r=json.load(open('.source-run.json'))
+          assert r['status']=='completed' and r['conclusion']=='success'
+          assert r['path'].split('@')[0]=='.github/workflows/build-lobby.yml'
+          assert r['head_repository']['full_name']==os.environ['GITHUB_REPOSITORY']
+          assert r['head_branch']=='master'
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          name: fr-ski-simulator-lobby
+          path: .work/input
+          run-id: ${{ inputs.lobby_run || '45507830982' }}
+          github-token: ${{ github.token }}
+      - name: Extract shared assets and validate reversible split
+        run: |
+          python tests/test_shared_site.py -v
+          python scripts/build_shared_site.py --input .work/input --out .work/site
+          python scripts/build_shared_site.py --out .work/site --check-only
+          for script in .work/site/assets/*.js; do node --check "$script"; done
+      - name: Test HTTP cache and both real games
+        run: |
+          npm install --no-save --ignore-scripts --no-audit --no-fund playwright-core@1.51.1
+          export CHROME_PATH="$(command -v google-chrome || command -v chromium)"
+          test -n "$CHROME_PATH"
+          node scripts/check_shared_cache.mjs .work/site .work/cache-qa
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shared-engine-cache-qa
+          path: .work/cache-qa/
+          if-no-files-found: warn
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fr-ski-simulator-shared-lobby
+          path: .work/site/
+          if-no-files-found: error
+          retention-days: 14
