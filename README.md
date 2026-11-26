@@ -112,7 +112,7 @@ flowchart TD
 
 把通用游戏引擎与雪场专属数据逐渐分离。
 
-以后制作 Alpe d'Huez、Val Thorens、Tignes 等其他法国雪场时，希望主要通过更换地理数据和配置来完成，而不用每次重新编写整个游戏。通用生成器的第一阶段已完成：新增雪场先在 `resorts/` 下建立自己的 `config.json`（名称、真实地图范围、数据来源等），再通过统一的 [build_game.py](scripts/build_game.py) 生成 HTML，或在 [GitHub Actions](https://github.com/lzcjames/fr-ski-simulator/actions) 选择 `Generate resort preview`。目前 Les Deux Alpes 和 Alpe d'Huez 已通过同一份通用引擎生成各自的 HTML。Engine v1.1 的 10/20/60 米独立 Terrarium 地形与 WebGL2 基础操作测试均已通过；完整雪道滑行及真实手机验证仍待完成。Engine v1.2 已通过 IGN 5/20/60 米地形验证和桌面 WebGL2 基础操作测试，v1.1 的手机横竖屏模拟测试也已通过。Engine v1.3 的无损高程压缩和 IGN 版手机横竖屏模拟测试全部通过：Les Deux Alpes 约 7.21 MB，Alpe d'Huez 约 7.29 MB。当前正在评估可选轻量启动模式。新增雪场仍需先配置真实地图范围。
+以后制作 Alpe d'Huez、Val Thorens、Tignes 等其他法国雪场时，希望主要通过更换地理数据和配置来完成，而不用每次重新编写整个游戏。通用生成器的第一阶段已完成：新增雪场先在 `resorts/` 下建立自己的 `config.json`（名称、真实地图范围、数据来源等），再通过统一的 [build_game.py](scripts/build_game.py) 生成 HTML，或在 [GitHub Actions](https://github.com/lzcjames/fr-ski-simulator/actions) 选择 `Generate resort preview`。目前 Les Deux Alpes 和 Alpe d'Huez 已通过同一份通用引擎生成各自的 HTML。Engine v1.1 的 10/20/60 米独立 Terrarium 地形与 WebGL2 基础操作测试均已通过；完整雪道滑行及真实手机验证仍待完成。Engine v1.2 已通过 IGN 5/20/60 米地形验证和桌面 WebGL2 基础操作测试，v1.1 的手机横竖屏模拟测试也已通过。Engine v1.3 的无损高程压缩和 IGN 版手机横竖屏模拟测试全部通过：Les Deux Alpes 约 7.21 MB，Alpe d'Huez 约 7.29 MB。新增雪场仍需先配置真实地图范围。
 
 引擎优化说明：[Engine v1](docs/engine-v1.md) · [分层地形](docs/engine-v1.1-terrain.md) · [IGN 试验](docs/engine-v1.2-ign.md) · [手机性能测试](docs/mobile-performance.md)。
 
@@ -120,7 +120,9 @@ flowchart TD
 
 游戏构建成果：[Engine v1.3 测试与下载](https://github.com/lzcjames/fr-ski-simulator/actions/runs/45505895867)。
 
-Engine v1.4 的轻量启动实验已通过两个雪场的桌面测试。统一大厅已加入构建流程：[大厅构建与下载](https://github.com/lzcjames/fr-ski-simulator/actions/workflows/build-lobby.yml)，[发布方法](docs/lobby.md)。
+Engine v1.4 的轻量启动实验已通过两个雪场的桌面测试。统一大厅已通过构建与浏览器页面测试：[大厅构建与下载](https://github.com/lzcjames/fr-ski-simulator/actions/runs/45507830982)，[发布方法](docs/lobby.md)。
+
+大厅 v0.2 将相同的 CSS 与 JavaScript 提取为 3.96 MB 内容哈希共享资源，在线 HTML 分别约 3.25 MB 与 3.33 MB，离线版保持不变。静态拆分与还原已验证，HTTP 缓存及在线游戏运行测试仍在进行：[共享引擎](docs/shared-engine.md)。
 
 ## 项目文件与技术资料
 
