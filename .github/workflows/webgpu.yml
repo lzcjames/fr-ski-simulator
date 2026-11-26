@@ -1,0 +1,80 @@
+name: Strict WebGPU compatibility
+on:
+  workflow_dispatch:
+    inputs:
+      lobby_run:
+        description: Successful shared-engine lobby build run
+        default: '45910446321'
+        required: true
+  push:
+    paths:
+      - '.github/workflows/webgpu.yml'
+      - 'scripts/check_webgpu_report.py'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  webgpu:
+    strategy:
+      fail-fast: false
+      matrix:
+        resort: [les-deux-alpes, alpe-d-huez]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      RESORT: ${{ matrix.resort }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          name: fr-ski-simulator-shared-lobby
+          path: .work/site
+          run-id: ${{ inputs.lobby_run || '45910446321' }}
+          github-token: ${{ github.token }}
+      - name: Prepare strict backend probe and software GPU
+        run: |
+          git clone https://github.com/awoele/ski-resort-to-game.git .work/skill
+          git -C .work/skill checkout --detach 4f64120bb085d1dc8f8978b9cb65cf7e9e92fcd1
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('.work/skill/scripts/qa_html.mjs')
+          s=p.read_text()
+          anchor="const url = pathToFileURL(file);"
+          assert s.count(anchor)==1
+          p.write_text(s.replace(anchor,anchor+"\nurl.searchParams.set('backend','webgpu');"))
+          p=Path('.work/skill/scripts/smoke_probe.js')
+          s=p.read_text()
+          anchor='return result;'
+          assert s.count(anchor)==1
+          p.write_text(s.replace(anchor,"result.actualBackend=window.__ski?.app()?.gfx?.caps?.backend; result.passed=result.passed&&result.actualBackend==='webgpu';\n"+anchor))
+          PY
+          CHROME=$(command -v google-chrome || command -v chromium)
+          test -n "$CHROME"
+          "$CHROME" --version
+          printf '#!/bin/bash\nexec "%s" --use-angle=swiftshader --use-vulkan=swiftshader --enable-unsafe-swiftshader --enable-unsafe-webgpu --disable-vulkan-surface "$@"\n' "$CHROME" > .work/chrome-webgpu
+          chmod +x .work/chrome-webgpu
+          echo "CHROME_PATH=$PWD/.work/chrome-webgpu" >> "$GITHUB_ENV"
+      - name: Run actual WebGPU smoke (fallback is not success)
+        id: smoke
+        continue-on-error: true
+        run: node .work/skill/scripts/qa_html.mjs --html ".work/site/games/$RESORT/index.html" --out .work/qa --width 960 --height 540 --backend auto --timeout 180 --probe .work/skill/scripts/smoke_probe.js
+      - name: Check actual backend and print evidence
+        id: strict
+        continue-on-error: true
+        run: python scripts/check_webgpu_report.py .work/qa/report.json
+      - name: Preserve browser diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.resort }}-strict-webgpu
+          path: .work/qa/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Enforce strict WebGPU success
+        if: always()
+        run: |
+          test "${{ steps.smoke.outcome }}" = success
+          test "${{ steps.strict.outcome }}" = success

@@ -1,0 +1,114 @@
+name: New resort IGN integration
+on:
+  workflow_dispatch:
+    inputs:
+      resort:
+        description: Existing resort profile slug
+        type: string
+        required: true
+        default: val-thorens
+  push:
+    paths:
+      - 'resorts/val-thorens/config.json'
+      - '.github/workflows/onboard-resort.yml'
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      RESORT: ${{ inputs.resort || 'val-thorens' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate profile and prepare pinned upstream Skill
+        run: |
+          CONFIG=$(python scripts/resort_config.py "$RESORT")
+          echo "CONFIG=$CONFIG" >> "$GITHUB_ENV"
+          SKILL_SHA=$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["skillCommit"])' "$CONFIG")
+          git clone https://github.com/awoele/ski-resort-to-game.git .work/skill
+          git -C .work/skill checkout --detach "$SKILL_SHA"
+          python -m pip install rasterio Pillow
+          python tests/test_generator.py -v
+          python tests/test_layered_terrain.py -v
+          python tests/test_ign_terrain.py -v
+          python tests/test_grid_codec.py -v
+      - name: Download fresh real OSM data
+        run: |
+          mkdir -p .work/input
+          BBOX=$(python -c 'import json,sys; print(",".join(map(str,json.load(open(sys.argv[1]))["bbox"])))' "$CONFIG")
+          python .work/skill/scripts/fetch_osm.py --bbox "$BBOX" --out .work/input/osm.json
+      - name: Fetch and cross-check 5/20/60 metre IGN elevation grids
+        run: |
+          python scripts/layered_terrain.py --config "$CONFIG" --skill .work/skill --osm .work/input/osm.json --work .work/terrain --ign-wms
+      - name: Build lossless standalone preview
+        run: |
+          python scripts/resolve_template.py --download --out .work/original.html
+          python scripts/engine_v1.py compile --template .work/original.html --out .work/shared.html
+          python scripts/engine_v1.py pack --engine .work/shared.html --config "$CONFIG" --data .work/terrain/layered-data.json --out ".work/compact/$RESORT.html" --compact-heights
+          python scripts/check_engine_bundle.py --engine .work/shared.html --game ".work/compact/$RESORT.html" --config "$CONFIG" --data .work/terrain/layered-data.json --compact-heights
+      - name: Configure software WebGL2
+        run: |
+          CHROME=$(command -v google-chrome || command -v chromium)
+          test -n "$CHROME"
+          printf '#!/bin/bash\nexec "%s" --use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader "$@"\n' "$CHROME" > .work/chrome-software
+          chmod +x .work/chrome-software
+          echo "CHROME_PATH=$PWD/.work/chrome-software" >> "$GITHUB_ENV"
+      - name: Desktop WebGL2 smoke
+        id: desktop
+        run: node .work/skill/scripts/qa_html.mjs --html ".work/compact/$RESORT.html" --out .work/desktop-qa --width 960 --height 540 --backend webgl2 --timeout 180 --probe .work/skill/scripts/smoke_probe.js
+      - name: Mobile portrait
+        id: portrait
+        continue-on-error: true
+        run: node .work/skill/scripts/qa_html.mjs --html ".work/compact/$RESORT.html" --out .work/portrait-qa --width 390 --height 844 --mobile --backend webgl2 --timeout 180 --probe scripts/mobile_probe.js
+      - name: Mobile landscape
+        id: landscape
+        continue-on-error: true
+        run: node .work/skill/scripts/qa_html.mjs --html ".work/compact/$RESORT.html" --out .work/landscape-qa --width 844 --height 390 --mobile --backend webgl2 --timeout 180 --probe scripts/mobile_probe.js
+      - name: Preserve geographic and desktop evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.RESORT }}-onboarding-evidence
+          path: |
+            .work/input/osm.json
+            .work/terrain/*-ign.tif
+            .work/terrain/layered-data.json
+            .work/terrain/layers-report.json
+            .work/terrain/data-report.json
+            .work/compact/
+            .work/desktop-qa/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Preserve portrait evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.RESORT }}-portrait-ign-compact
+          path: |
+            .work/compact/
+            .work/portrait-qa/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Preserve landscape evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.RESORT }}-landscape-ign-compact
+          path: |
+            .work/compact/
+            .work/landscape-qa/
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Enforce all browser gates
+        if: always()
+        run: |
+          test "${{ steps.desktop.outcome }}" = success
+          test "${{ steps.portrait.outcome }}" = success
+          test "${{ steps.landscape.outcome }}" = success

@@ -1,0 +1,33 @@
+{
+  "resort": "Val Thorens",
+  "slug": "val-thorens",
+  "sector": "Village 2300 – Cascades – Plein Sud (candidate sector)",
+  "status": "candidate sector; route completeness, IGN coverage and browser QA required",
+  "bbox": [
+    6.559,
+    45.283,
+    6.602,
+    45.312
+  ],
+  "origin": [
+    6.5805,
+    45.2975
+  ],
+  "dem": {
+    "source": "terrarium",
+    "step": 30,
+    "zoom": 13,
+    "padding": 150
+  },
+  "skillCommit": "4f64120bb085d1dc8f8978b9cb65cf7e9e92fcd1",
+  "build": {
+    "maxCourses": 8,
+    "maxStarts": 12
+  },
+  "preview": {
+    "primaryCourse": null,
+    "includeGradeReview": false,
+    "regionLabel": "FRANCE / SAVOIE",
+    "wetBelow": 2100
+  }
+}
