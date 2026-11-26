@@ -6,6 +6,10 @@ on:
         description: Validated compact IGN mobile workflow run
         default: '45505895867'
         required: true
+      onboarding_run:
+        description: Optional successful New resort IGN integration run
+        required: false
+        type: string
       startup_run:
         description: Validated startup profiling workflow run
         default: '45506525645'
@@ -42,6 +46,49 @@ jobs:
           path: .work/startup
           run-id: ${{ inputs.startup_run || '45506525645' }}
           github-token: ${{ github.token }}
+      - name: Verify new resort onboarding result
+        if: inputs.onboarding_run != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ inputs.onboarding_run }}
+        run: |
+          [[ "$RUN_ID" =~ ^[0-9]+$ ]]
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID" > .onboarding-run.json
+          python - <<'PY'
+          import json,os
+          r=json.load(open('.onboarding-run.json'))
+          assert r['status']=='completed' and r['conclusion']=='success'
+          assert r['path'].split('@')[0]=='.github/workflows/onboard-resort.yml'
+          assert r['head_repository']['full_name']==os.environ['GITHUB_REPOSITORY']
+          assert r['head_branch']=='master'
+          PY
+      - name: Download verified new resort games
+        if: inputs.onboarding_run != ''
+        uses: actions/download-artifact@v4
+        with:
+          pattern: '*-ign-compact'
+          path: .work/onboard
+          run-id: ${{ inputs.onboarding_run }}
+          github-token: ${{ github.token }}
+      - name: Merge new resort without replacing existing games
+        if: inputs.onboarding_run != ''
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re, shutil
+          new=Path('.work/onboard')
+          dirs=sorted(new.iterdir())
+          assert len(dirs)==2 and all(p.is_dir() for p in dirs), 'expected both mobile test artifacts'
+          match=[re.fullmatch(r'([a-z0-9]+(?:-[a-z0-9]+)*)-(portrait|landscape)-ign-compact',p.name) for p in dirs]
+          assert all(match), 'unexpected artifact name'
+          assert len({m[1] for m in match})==1 and {m[2] for m in match}=={'portrait','landscape'}
+          slug=match[0][1]
+          assert Path('resorts',slug,'config.json').is_file(), 'missing resort profile'
+          for p in dirs:
+              dst=Path('.work/mobile',p.name)
+              if dst.exists(): raise ValueError('refuse to overwrite validated artifact '+p.name)
+              shutil.move(str(p),str(dst))
+          PY
       - name: Organize by resort profile
         run: |
           mkdir -p .work/input

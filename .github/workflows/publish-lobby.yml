@@ -3,9 +3,14 @@ on:
   workflow_dispatch:
     inputs:
       lobby_run:
-        description: Successful Build multi-resort lobby workflow run ID
+        description: Successful lobby or shared-engine workflow run ID
         required: true
         type: string
+      edition:
+        description: Website edition to publish
+        type: choice
+        options: [shared, standalone]
+        default: shared
 permissions:
   contents: read
   actions: read
@@ -22,6 +27,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RUN_ID: ${{ inputs.lobby_run }}
+          EDITION: ${{ inputs.edition }}
         run: |
           [[ "$RUN_ID" =~ ^[0-9]+$ ]]
           gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID" > run.json
@@ -29,17 +35,26 @@ jobs:
           import json,os
           r=json.load(open('run.json'))
           assert r['status']=='completed' and r['conclusion']=='success'
-          assert r['path'].split('@')[0]=='.github/workflows/build-lobby.yml'
+          expected={'shared':'.github/workflows/shared-engine.yml','standalone':'.github/workflows/build-lobby.yml'}[os.environ['EDITION']]
+          assert r['path'].split('@')[0]==expected
           assert r['head_repository']['full_name']==os.environ['GITHUB_REPOSITORY']
           assert r['head_branch']=='master'
           PY
       - uses: actions/download-artifact@v4
         with:
-          name: fr-ski-simulator-lobby
+          name: ${{ inputs.edition == 'shared' && 'fr-ski-simulator-shared-lobby' || 'fr-ski-simulator-lobby' }}
           path: .work/site
           run-id: ${{ inputs.lobby_run }}
           github-token: ${{ github.token }}
-      - run: python scripts/check_lobby.py .work/site
+      - name: Check downloaded website
+        env:
+          EDITION: ${{ inputs.edition }}
+        run: |
+          if [ "$EDITION" = shared ]; then
+            python scripts/build_shared_site.py --out .work/site --check-only
+          else
+            python scripts/check_lobby.py .work/site
+          fi
       - uses: actions/upload-pages-artifact@v3
         with:
           path: .work/site

@@ -6,6 +6,6 @@
 
 本地：`python scripts/build_shared_site.py --input extracted-lobby --out .work/online-site`。以静态 HTTP 服务访问生成目录。建议对 assets/ 下的内容哈希资源设置 Cache-Control: public, max-age=31536000, immutable；HTML 和 catalog 应短缓存或重新验证。GitHub Pages 的实际缓存策略取决于托管服务，不保证一年缓存头。
 
-验证：Shared online engine cache 工作流只接受成功的大厅构建，检查精确拆分、静态链接、资源哈希和 JS 语法。通过真实 HTTP 服务在同一 Chromium profile 中依次打开两座雪场，检测 WebGL2 就绪、基础控制以及第二座雪场是否重新请求共享资源；未通过时不上传可部署站点。报告区分服务端响应体字节与浏览器 Resource Timing，不宣称节省同等数量的压缩网络流量。没有修改已验证的手动 Pages 发布流程；共享版仍为待验证实验，未发布到公网。
+验证：Shared online engine cache 工作流只接受成功的大厅构建，检查精确拆分、静态链接、资源哈希和 JS 语法。通过真实 HTTP 服务在同一 Chromium profile 中依次打开两座雪场，检测 WebGL2 就绪、基础控制以及第二座雪场是否重新请求共享资源；未通过时不上传可部署站点。报告区分服务端响应体字节与浏览器 Resource Timing，不宣称节省同等数量的压缩网络流量。共享版 HTTP 测试已在 run 45910446321 通过。第一次加载传输 3,958,368 字节公共资源；第二座雪场的三个资源请求和 transferSize 均为零。手动 Pages 发布流程支持 shared 或 standalone 版本，只允许成功的对应来源工作流，并再次核对产物。尚未发布公网。
 
 仍需要实机 GPU、WebGPU、完整路线滑行与实际托管缓存测试。原版离线文件以及实验轻量版仍保留，因此整个下载 ZIP 不一定更小，收益在于在线切换雪场。

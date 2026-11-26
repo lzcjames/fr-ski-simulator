@@ -9,3 +9,5 @@ The profile deliberately leaves the primary course unset and excludes grade-revi
 The new resort is not automatically added to the validated two-resort lobby. Promote only after all three browser gates succeed. Full route completion, actual device performance, and visual inspection remain separate gates.
 
 WebGPU testing is a separate strict workflow against the already validated two-resort standalone HTML. It requests WebGPU explicitly and verifies the actual backend; fallback to WebGL2 cannot pass. GitHub-hosted Chrome uses a software graphics experiment; no hardware GPU guarantee. Keep the existing WebGL2 fallback unchanged.
+
+Promotion: after New resort IGN integration succeeds, manually run Build multi-resort lobby with the successful onboarding run ID in `onboarding_run`. It merges the two orientation artifacts without overwriting existing games. Then run Shared online engine cache with the new successful lobby run ID. The Pages publisher can accept that validated shared build. No publication is automatic.

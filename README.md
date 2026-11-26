@@ -122,7 +122,9 @@ flowchart TD
 
 Engine v1.4 的轻量启动实验已通过两个雪场的桌面测试。统一大厅已通过构建与浏览器页面测试：[大厅构建与下载](https://github.com/lzcjames/fr-ski-simulator/actions/runs/45507830982)，[发布方法](docs/lobby.md)。
 
-大厅 v0.2 将相同的 CSS 与 JavaScript 提取为 3.96 MB 内容哈希共享资源，在线 HTML 分别约 3.25 MB 与 3.33 MB，离线版保持不变。静态拆分与还原已验证，HTTP 缓存及在线游戏运行测试仍在进行：[共享引擎](docs/shared-engine.md)。
+大厅 v0.2 将相同的 CSS 与 JavaScript 提取为 3.96 MB 内容哈希共享资源，在线 HTML 分别约 3.25 MB 与 3.33 MB，离线版保持不变。静态拆分、还原及两座雪场的 HTTP 缓存和在线基础操作测试均通过：[共享引擎](docs/shared-engine.md) · [共享大厅下载](https://github.com/lzcjames/fr-ski-simulator/actions/runs/45910446321/artifacts/15159504086)。
+
+第三座雪场 Val Thorens 已加入配置及高精度 IGN 构建流程，等待真实数据与浏览器测试；WebGPU 独立验证也已启动。未通过验证的新雪场不会加入已验证大厅。
 
 ## 项目文件与技术资料
 
