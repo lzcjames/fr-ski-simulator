@@ -22,11 +22,13 @@ def main():
         content_type=response.headers.get("Content-Type","")
     if len(raw)>limit:raise ValueError("snapshot exceeds review size cap")
     if "text/html" not in content_type.lower():raise ValueError("expected HTML response")
-    if not re.search(rb"<!doctype html|<html\b",raw[:4096],re.I):raise ValueError("not an HTML document")
+    html_document=bool(re.search(rb"<!doctype html|<html\b",raw,re.I))
+    game_markers={k.decode():raw.count(k) for k in (b"AVZ_DATA",b"Cold Smoke",b"requestAdapter",b"</script>")}
+    print("Response diagnostics:",json.dumps({"bytes":len(raw),"sha256":hashlib.sha256(raw).hexdigest(),"prefix":raw[:300].decode("utf-8","replace"),"htmlDocument":html_document,"gameMarkers":game_markers},ensure_ascii=True))
     clean,count=re.subn(TRACKER,b"",raw)
     raw_sha=hashlib.sha256(raw).hexdigest()
     clean_sha=hashlib.sha256(clean).hexdigest()
-    meta={"url":URL,"finalUrl":final_url,"capturedAt":datetime.datetime.now(datetime.timezone.utc).isoformat(),"contentType":content_type,"rawBytes":len(raw),"normalizedBytes":len(clean),"rawSha256":raw_sha,"normalizedSha256":clean_sha,"previousNormalizedSha256":SHA256,"knownTrackerRemoved":count,"changed":clean_sha!=SHA256,"status":"review only; no execution or engine promotion"}
+    meta={"url":URL,"finalUrl":final_url,"capturedAt":datetime.datetime.now(datetime.timezone.utc).isoformat(),"contentType":content_type,"rawBytes":len(raw),"normalizedBytes":len(clean),"rawSha256":raw_sha,"normalizedSha256":clean_sha,"previousNormalizedSha256":SHA256,"knownTrackerRemoved":count,"changed":clean_sha!=SHA256,"htmlDocument":html_document,"gameMarkers":game_markers,"status":"review only; no execution or engine promotion"}
     (a.out/"avoriaz-current.raw.html").write_bytes(raw)
     (a.out/"avoriaz-current.review.html").write_bytes(clean)
     (a.out/"snapshot.json").write_text(json.dumps(meta,indent=2),encoding="utf-8")
