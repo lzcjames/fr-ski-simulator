@@ -5,7 +5,7 @@ on:
       release_sha:
         description: Exact validated vercel-release commit
         required: true
-        default: '4fda70bd5995d950a9d657a360cc8b616c4b2f93'
+        default: '05206bdf08bcbd57f5958923af57eb3cec847d05'
         type: string
   push:
     branches: [master]
@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 8
     env:
-      RELEASE_SHA: ${{ inputs.release_sha || '4fda70bd5995d950a9d657a360cc8b616c4b2f93' }}
+      RELEASE_SHA: ${{ inputs.release_sha || '05206bdf08bcbd57f5958923af57eb3cec847d05' }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:

@@ -4,7 +4,7 @@
 
 目前以 [Avoriaz 游戏](https://avoriaz.manus.space/) 为模板，利用其作者的 Skill 制作多个法国雪场的滑雪游戏。
 
-**在线游玩：[fr-ski-simulator.vercel.app](https://fr-ski-simulator.vercel.app)** — Engine v2.0.1，四个雪场、31 条候选计时路线。手机缆车触屏操作修复 v2.0.2 正在测试，尚未发布。
+**在线游玩：[fr-ski-simulator.vercel.app](https://fr-ski-simulator.vercel.app)** — Engine v2.0.2，四个雪场、31 条候选计时路线，已支持手机缆车触屏操作。
 
 ## 一、制作游戏需要什么？
 
@@ -130,7 +130,7 @@ Engine v2.0.1 已适配作者最新授权 Avoriaz 版本并修复第一人称装
 
 Galibier-Thabor 首版只覆盖 Valloire 一侧候选区域，不是整个 Valloire / Valmeinier 联合雪域；Tignes 暂缓。[接入说明](docs/galibier-thabor-integration.md)。
 
-目前线上仍是工程预览版。手机缆车触屏按钮 v2.0.2 已编写，待四雪场横竖屏实际乘坐测试通过再发布：[缆车修复说明](docs/mobile-lift.md) · [测试](https://github.com/lzcjames/fr-ski-simulator/actions/runs/45990548083)。真实设备性能、完整雪道通关和实际 WebGPU 后端仍待验证。
+目前线上仍是工程预览版。手机缆车触屏按钮 v2.0.2 已通过四雪场八项横竖屏实际乘坐模拟测试并发布：[缆车修复说明](docs/mobile-lift.md) · [测试](https://github.com/lzcjames/fr-ski-simulator/actions/runs/45990548083)。真实设备性能、完整雪道通关和实际 WebGPU 后端仍待验证。
 
 ## 项目文件与技术资料
 
