@@ -124,7 +124,7 @@ Engine v1.4 的轻量启动实验已通过两个雪场的桌面测试。统一�
 
 大厅 v0.2 将相同的 CSS 与 JavaScript 提取为 3.96 MB 内容哈希共享资源，在线 HTML 分别约 3.25 MB 与 3.33 MB，离线版保持不变。静态拆分、还原及两座雪场的 HTTP 缓存和在线基础操作测试均通过：[共享引擎](docs/shared-engine.md) · [共享大厅下载](https://github.com/lzcjames/fr-ski-simulator/actions/runs/45910446321/artifacts/15159504086)。
 
-第三座雪场 Val Thorens 已加入配置及高精度 IGN 构建流程，等待真实数据与浏览器测试；WebGPU 独立验证也已启动。未通过验证的新雪场不会加入已验证大厅。
+Engine v2.0 已适配作者最新授权 Avoriaz 版本，三座雪场 Les Deux Alpes、Alpe d'Huez、Val Thorens 的全部九项桌面与手机 WebGL2 基础测试已通过。Val Thorens 保留七条候选路线。新版大厅和单板、相机专项验证仍在进行：[Engine v2.0](docs/engine-v2.md) · [游戏及测试产物](https://github.com/lzcjames/fr-ski-simulator/actions/runs/45914214557)。WebGPU 软件适配器曾因 18 个采样纹理超过默认 16 的限制而失败；v2 新增能力预检，实际 WebGPU 仍待验证。
 
 ## 项目文件与技术资料
 

@@ -1,0 +1,66 @@
+name: Engine v2 snowboard and camera regression
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/v2_features_probe.js'
+      - '.github/workflows/v2-features.yml'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        resort: [les-deux-alpes, alpe-d-huez, val-thorens]
+        mode: [desktop, portrait]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      RESORT: ${{ matrix.resort }}
+      MODE: ${{ matrix.mode }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.resort }}-v2-candidate
+          path: .work/input
+          run-id: '45914214557'
+          github-token: ${{ github.token }}
+      - name: Prepare pinned QA and software GPU
+        run: |
+          git clone https://github.com/awoele/ski-resort-to-game.git .work/skill
+          git -C .work/skill checkout --detach 4f64120bb085d1dc8f8978b9cb65cf7e9e92fcd1
+          CHROME=$(command -v google-chrome || command -v chromium)
+          test -n "$CHROME"
+          printf '#!/bin/bash\nexec "%s" --use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader "$@"\n' "$CHROME" > .work/chrome
+          chmod +x .work/chrome
+          echo "CHROME_PATH=$PWD/.work/chrome" >> "$GITHUB_ENV"
+      - name: Verify actual equipment, animated stance switch and camera state
+        run: |
+          if [ "$MODE" = portrait ]; then
+            node .work/skill/scripts/qa_html.mjs --html ".work/input/v2/$RESORT.html" --out .work/qa --width 390 --height 844 --mobile --backend webgl2 --timeout 180 --probe scripts/v2_features_probe.js
+          else
+            node .work/skill/scripts/qa_html.mjs --html ".work/input/v2/$RESORT.html" --out .work/qa --width 960 --height 540 --backend webgl2 --timeout 180 --probe scripts/v2_features_probe.js
+          fi
+      - name: Print individual checks
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('.work/qa/report.json')
+          if p.exists():
+              r=json.loads(p.read_text());print(json.dumps({'passed':r.get('passed'),'readyMs':r.get('readyMs'),'probe':r.get('probe'),'consoleErrors':r.get('consoleErrors')},ensure_ascii=False))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{ matrix.resort }}-${{ matrix.mode }}-v2-features
+          path: .work/qa/
+          if-no-files-found: warn
+          retention-days: 30
