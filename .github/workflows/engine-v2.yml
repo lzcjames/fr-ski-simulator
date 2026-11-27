@@ -14,6 +14,8 @@ on:
     paths:
       - 'scripts/engine_v2.py'
       - 'scripts/fpv_v2_fix.py'
+      - 'scripts/mobile_lift_fix.py'
+      - 'scripts/mobile_lift_probe.js'
       - 'scripts/v2_features_probe.js'
 permissions:
   contents: read
@@ -30,7 +32,7 @@ jobs:
         id: plan
         env:
           GH_TOKEN: ${{ github.token }}
-          RUN_ID: ${{ inputs.galibier_data_run || github.event.workflow_run.id || '' }}
+          RUN_ID: ${{ inputs.galibier_data_run || github.event.workflow_run.id || '45962510322' }}
         run: |
           python - <<'PY'
           import json,os,subprocess,re
@@ -60,7 +62,7 @@ jobs:
       matrix:
         include: ${{ fromJSON(needs.matrix.outputs.include) }}
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     env:
       RESORT: ${{ matrix.resort }}
     steps:
@@ -119,6 +121,14 @@ jobs:
         id: features_mobile
         continue-on-error: true
         run: node .work/skill/scripts/qa_html.mjs --html ".work/v2/$RESORT.html" --out .work/features-mobile --width 390 --height 844 --mobile --backend webgl2 --timeout 180 --probe scripts/v2_features_probe.js
+      - name: Mobile lift portrait interaction
+        id: lift_portrait
+        continue-on-error: true
+        run: node .work/skill/scripts/qa_html.mjs --html ".work/v2/$RESORT.html" --out .work/lift-portrait --width 390 --height 844 --mobile --backend webgl2 --timeout 180 --probe scripts/mobile_lift_probe.js
+      - name: Mobile lift landscape interaction
+        id: lift_landscape
+        continue-on-error: true
+        run: node .work/skill/scripts/qa_html.mjs --html ".work/v2/$RESORT.html" --out .work/lift-landscape --width 844 --height 390 --mobile --backend webgl2 --timeout 180 --probe scripts/mobile_lift_probe.js
       - name: Preserve candidate and browser evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -132,6 +142,8 @@ jobs:
             .work/landscape/
             .work/features-desktop/
             .work/features-mobile/
+            .work/lift-portrait/
+            .work/lift-landscape/
           if-no-files-found: warn
           retention-days: 30
       - name: Require all browser gates
@@ -142,6 +154,8 @@ jobs:
           test "${{ steps.landscape.outcome }}" = success
           test "${{ steps.features_desktop.outcome }}" = success
           test "${{ steps.features_mobile.outcome }}" = success
+          test "${{ steps.lift_portrait.outcome }}" = success
+          test "${{ steps.lift_landscape.outcome }}" = success
   archive-upstream:
     needs: matrix
     runs-on: ubuntu-latest
