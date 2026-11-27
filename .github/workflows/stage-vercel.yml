@@ -1,0 +1,87 @@
+name: Stage verified Vercel website
+on:
+  workflow_dispatch:
+    inputs:
+      lobby_run:
+        description: Successful v2 lobby or four-resort integration run
+        required: true
+        default: '45915425426'
+        type: string
+  push:
+    branches: [master]
+    paths:
+      - '.github/workflows/stage-vercel.yml'
+      - 'deploy/vercel.json'
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: vercel-release-stage
+  cancel-in-progress: false
+jobs:
+  stage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+      - name: Verify source workflow and choose artifact
+        id: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ inputs.lobby_run || '45915425426' }}
+        run: |
+          set -euo pipefail
+          [[ "$RUN_ID" =~ ^[0-9]+$ ]]
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID" > .source-run.json
+          python - <<'PY'
+          import json,os
+          r=json.load(open('.source-run.json'))
+          assert r['status']=='completed' and r['conclusion']=='success'
+          assert r['head_repository']['full_name']==os.environ['GITHUB_REPOSITORY'] and r['head_branch']=='master'
+          names={'.github/workflows/v2-lobby.yml':'fr-ski-simulator-v2-lobby','.github/workflows/engine-v2.yml':'fr-ski-simulator-v2-four-lobby'}
+          artifact=names[r['path'].split('@')[0]]
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:f.write('artifact='+artifact+'\n')
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ steps.source.outputs.artifact }}
+          path: .work/site
+          run-id: ${{ inputs.lobby_run || '45915425426' }}
+          github-token: ${{ github.token }}
+      - name: Verify static site and hashes
+        run: |
+          python scripts/build_shared_site.py --out .work/site --check-only
+          cp deploy/vercel.json .work/site/vercel.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('.work/site')
+          rows=json.loads((p/'catalog.json').read_text())['resorts']
+          assert len(rows) in (3,4)
+          assert all(r['engineVersion']==2 for r in rows)
+          (p/'release.json').write_text(json.dumps({'sourceRun':json.loads(Path('.source-run.json').read_text())['id'],'resorts':[r['slug'] for r in rows],'engineVersion':2},indent=2))
+          PY
+      - name: Commit only validated static site to release branch
+        env:
+          RUN_ID: ${{ inputs.lobby_run || '45915425426' }}
+        run: |
+          set -euo pipefail
+          SITE="$PWD/.work/site"
+          RELEASE="$(mktemp -d)"
+          if git ls-remote --exit-code --heads origin vercel-release >/dev/null; then
+            git fetch origin vercel-release
+            git worktree add --detach "$RELEASE" origin/vercel-release
+          else
+            git worktree add --detach "$RELEASE" HEAD
+          fi
+          cd "$RELEASE"
+          mkdir -p vercel-site
+          find vercel-site -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
+          cp -a "$SITE/." vercel-site/
+          git add -f vercel-site
+          if git diff --cached --quiet; then echo 'Release unchanged'; exit 0; fi
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m "Publish validated static lobby from run $RUN_ID"
+          git push origin HEAD:refs/heads/vercel-release
+          git rev-parse HEAD
