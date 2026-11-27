@@ -26073,6 +26073,44 @@ const AVZMap = (() => {
   const raceT = () => Math.max(0, (Game.runT || 0) - t0 - held);
   let stuckT = 0, stuckRt = 0, lastOff = 0, rescueBtn = null, stuckSaid = false, runRescue = 0;
   const coarse = () => { try { return matchMedia('(pointer:coarse)').matches; } catch (e) { return false; } };
+  let frLiftBtn = null;
+  const frTouch = () => coarse() || navigator.maxTouchPoints > 0;
+  // Re-evaluate the live position, not a stale nearLift from the last HUD tick.
+  const frLiftChoice = () => {
+    if (!frTouch() || Game.mode !== 'run' || !Game.s || open || photo || AVZ.fin || QS.has('nomap')) return null;
+    if (riding) return {kind:'summit',lift:riding.l};
+    if (mode !== 'free') return null;
+    const p=Game.s.p;
+    let best=null, dist=34*34;
+    for (const l of lifts) {
+      if (l.a1-l.a0<=20) continue;
+      const b=l.p[0], d=(b[0]-p[0])**2+(b[1]-p[2])**2;
+      if(d<dist){best=l;dist=d;}
+    }
+    return best ? {kind:'board',lift:best} : null;
+  };
+  const frLiftLabels={
+    en:['Ride lift','Go to summit'],pt:['Subir no teleférico','Ir ao topo'],
+    ar:['اركب المصعد','إلى القمة'],ja:['リフトに乗る','山頂へ'],
+    ko:['리프트 탑승','정상으로'], 'zh-Hant':['乘坐纜車','直接到山頂'],
+    'zh-Hans':['乘坐缆车','直接到山顶']
+  };
+  const frUpdateLift = () => {
+    if(!frLiftBtn)return;
+    const q=frLiftChoice();
+    frLiftBtn.hidden=!q;frLiftBtn.disabled=!q;
+    if(!q){delete frLiftBtn.dataset.action;delete frLiftBtn.dataset.lift;return;}
+    const label=(frLiftLabels[I18N.lang]||frLiftLabels.en)[q.kind==='summit'?1:0];
+    if(frLiftBtn.textContent!==label)frLiftBtn.textContent=label;
+    frLiftBtn.dataset.action=q.kind;frLiftBtn.dataset.lift=q.lift.n;
+    frLiftBtn.setAttribute('aria-label',label+' · '+q.lift.n);
+  };
+  const frUseLift = () => {
+    const q=frLiftChoice();if(!q)return;
+    if(q.kind==='summit')rideEnd(true);
+    else {nearLift=q.lift;ride();}
+    frUpdateLift();
+  };
   window.__avzLabel = () => label;
   // ---- 界面元素 ----
   const brandMark = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M3 26L16 5l13 21M10 26l6-10 6 10M11 22h10"/></svg>';
@@ -26118,6 +26156,12 @@ const AVZMap = (() => {
     mini = document.createElement('div'); mini.className = 'avz-mini';
     mini.innerHTML = '<canvas aria-label="随行雪道地图"></canvas><div class="avz-mini-label">LOCAL MAP</div>';
     mCv = mini.children[0]; hud.appendChild(mini); sizeMini(); addEventListener('resize', sizeMini);
+    frLiftBtn=document.createElement('button');
+    frLiftBtn.id='fr-lift-action';frLiftBtn.type='button';frLiftBtn.hidden=true;frLiftBtn.disabled=true;
+    for(const ev of ['pointerdown','pointerup','touchstart','touchend','mousedown','mouseup'])
+      frLiftBtn.addEventListener(ev,e=>e.stopPropagation(),{passive:true});
+    frLiftBtn.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();frUseLift();frLiftBtn.blur();});
+    mini.appendChild(frLiftBtn);
     navCard = document.createElement('div'); navCard.className = 'avz-routehud'; navCard.dataset.mode = 'free';
     navCard.innerHTML = '<div class="avz-routehud-mode">自由滑行</div><div class="avz-mini-name"></div><div class="avz-mini-meta"></div>';
     navMode = navCard.children[0]; capA = navCard.children[1]; capB = navCard.children[2];
@@ -26913,7 +26957,7 @@ const drawMap=()=>{
   const rideCam = (pos, f, p) => { const q = riding && AVZ.lift.pos(); if (!q) return false; const ty = q[6], g = Course.height(q[0], q[2], 0.5); let y = ty === 0 ? q[1] - 1.95 : ty === 1 ? q[1] - 5.9 : Math.max(g + 1.6, q[1] - 2.0), o = ty === 1 ? 3.4 : ty === 0 ? 0.75 : 0.15; if (y < g + 1.5) y = g + 1.5;
     pos[0] = q[0] + q[3] * o; pos[1] = y; pos[2] = q[2] + q[4] * o; const a = riding.look || 0, c = Math.cos(a), sn = Math.sin(a), fx = q[3] * c - q[4] * sn, fz = q[3] * sn + q[4] * c, l = Math.hypot(fx, 0.07, fz); f[0] = fx / l; f[1] = -0.07 / l; f[2] = fz / l; return true; };
   const rideEnd = (skip) => { const R = riding; if (!R) return; riding = null; AVZ.lift.stop(); AVZ.hold = false; if (AVZ.photoCam === rideCam) AVZ.photoCam = null; nearLift = R.l; ride(true); };
-  const ride = (direct) => { const l = nearLift; if (!l) return; if (direct !== true && !photo && AVZ.lift && AVZ.lift.start(l.n)) { riding = { l, look: 0 }; hideCard(); AVZ.hold = true; AVZ.photoCam = rideCam; AVZ.photoFov = null; say('乘坐 ' + nameOf(l.n) + ' · 左右键转头 · 再按 E 直接到山顶', 7); return; } const shut = direct !== true && AVZ.lift && AVZ.lift.closed(); const t = l.p[l.p.length - 1]; hideCard(); lastC = null; spawn = spawnOn(t[0], t[1]); mode = 'free'; course = null; try { Game.reset(); Game.resetAt.apply(Game, spawn); Game.start(); kick(); fresh(); } catch (e) { M._err = String(e); } say((shut ? '夜间缆车停运 · 直接送你上山 · ' : '') + nameOf(l.n) + ' · 海拔 ' + l.a1 + ' 米', 5); };
+  const ride = (direct) => { const l = nearLift; if (!l) return; if (direct !== true && !photo && AVZ.lift && AVZ.lift.start(l.n)) { riding = { l, look: 0 }; hideCard(); AVZ.hold = true; AVZ.photoCam = rideCam; AVZ.photoFov = null; say('乘坐 ' + nameOf(l.n) + (frTouch()?' · 点缆车按钮直接到山顶':' · 左右键转头 · 再按 E 直接到山顶'), 7); return; } const shut = direct !== true && AVZ.lift && AVZ.lift.closed(); const t = l.p[l.p.length - 1]; hideCard(); lastC = null; spawn = spawnOn(t[0], t[1]); mode = 'free'; course = null; try { Game.reset(); Game.resetAt.apply(Game, spawn); Game.start(); kick(); fresh(); } catch (e) { M._err = String(e); } say((shut ? '夜间缆车停运 · 直接送你上山 · ' : '') + nameOf(l.n) + ' · 海拔 ' + l.a1 + ' 米', 5); };
   const pbAll = () => { try { return JSON.parse(localStorage.getItem(FR_RESORT.pbKey) || '{}') || {}; } catch (e) { return {}; } };
   AVZ.personalBests = pbAll;
   // the finish card sits dead centre; everything but the route card steps aside while it is up
@@ -26979,9 +27023,10 @@ const drawMap=()=>{
   const cap = (a, b) => { const nm = mode === 'race' ? 'race' : nearLift ? 'lift' : 'free'; navCard.dataset.mode = nm; navMode.textContent=modeText(); if (capA._h !== a) { capA.innerHTML = a; capA._h = a; } if (capB._h !== b) { capB.innerHTML = b; capB._h = b; } };
   const dot = (d) => '<span class="avz-run-dot" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:' + DCOL[d] + ';box-shadow:0 0 0 1.5px rgba(255,255,255,.85);margin-right:9px;vertical-align:1px"></span>';
   let snowSeen = '', funHud = null, funSeen = '';
-  const tick = () => { if (riding) { const q = AVZ.lift.pos(), u = AVZ.uRaw || 0; if (!q || q[5] > 0.985) { rideEnd(); } else { const P = Game.s && Game.s.p; if (P) { P[0] = q[0]; P[2] = q[2]; P[1] = Course.height(q[0], q[2], 0.5); } riding.look += ((Math.abs(u) > 0.3 ? Math.sign(u) * 1.1 : 0) - riding.look) * 0.06; requestAnimationFrame(tick); return; } } if (AVZ.snowCur && AVZ.snowCur.id !== snowSeen) { const first = !snowSeen; snowSeen = AVZ.snowCur.id; if (!first && !photo) say('雪况 · ' + AVZ.snowCur.name, 3); }
+  const tick = () => { frUpdateLift(); if (riding) { const q = AVZ.lift.pos(), u = AVZ.uRaw || 0; if (!q || q[5] > 0.985) { rideEnd(); } else { const P = Game.s && Game.s.p; if (P) { P[0] = q[0]; P[2] = q[2]; P[1] = Course.height(q[0], q[2], 0.5); } riding.look += ((Math.abs(u) > 0.3 ? Math.sign(u) * 1.1 : 0) - riding.look) * 0.06; requestAnimationFrame(tick); return; } } if (AVZ.snowCur && AVZ.snowCur.id !== snowSeen) { const first = !snowSeen; snowSeen = AVZ.snowCur.id; if (!first && !photo) say('雪况 · ' + AVZ.snowCur.name, 3); }
     requestAnimationFrame(tick);
     if (!mini && !mount()) return;
+    frUpdateLift();
     if (rescueBtn && rescueBtn.style.display !== 'none' && (Game.mode !== 'run' || open || photo || AVZ.fin || riding)) { rescueBtn.style.display = 'none'; stuckT = 0; }
     const now = performance.now(), on = Game.mode === 'run' && Game.s && !QS.has('nomap'); mini.style.opacity = on && !open && !AVZ.fin ? '1' : '0'; navCard.style.opacity = Game.mode === 'run' && !open ? '1' : '0';
     if (now > toastT || open) toast.style.opacity = '0';
@@ -27039,7 +27084,7 @@ const drawMap=()=>{
       if (outT && outL) { const left = Math.max(0, 12 - (now - outT) / 1000); if (left <= 0) { nearLift = outL; ride(); return; } cap('<span style="color:var(--sun)">已滑出地图范围 · <b style="font-weight:600">E</b> 回到 ' + nameOf(outL.n) + ' 缆车</span>', Math.ceil(left) + ' 秒后自动送回'); if (fr % 2 === 0) drawMini(px, pz, hx, hz, S.speed, now); fr++; return; }
       const alt = Math.round(altG(px, pz)), nm = bi >= 0 ? pistes[bi].n : '';
       if (nm && nm !== hereName) { hereName = nm; hereD = pistes[bi].d; flashT = now; showCard(nameOf(nm),(pistes[bi].fun?(routeType(pistes[bi])==='branch'?'主线岔路':'公园游乐'):DNAME[hereD])+' · 海拔 '+alt+' M'); } else if (!nm && hereName) { if (!lostAt) lostAt = now; else if (now - lostAt > 1000) { hereName = ''; lostAt = 0; } } if (nm) lostAt = 0;
-      if (nearLift) cap('<b style="font-weight:600;color:var(--sun);margin-right:8px">E</b>坐 ' + nameOf(nearLift.n) + ' 缆车上山', '+' + (nearLift.a1 - nearLift.a0) + ' m　到海拔 ' + nearLift.a1 + ' m');
+      if (nearLift) cap((frTouch()?'':'<b style="font-weight:600;color:var(--sun);margin-right:8px">E</b>')+'坐 ' + nameOf(nearLift.n) + ' 缆车上山', '+' + (nearLift.a1 - nearLift.a0) + ' m　到海拔 ' + nearLift.a1 + ' m');
       else if (outL) cap('道外 · 自由探索', 'E 回 ' + nameOf(outL.n) + ' 缆车　海拔 ' + alt + ' m'); else cap(hereName ? ((bi>=0&&pistes[bi].fun)?'<span style="color:'+PLAY_COL+'">'+(routeType(pistes[bi])==='branch'?'↳':'P')+'</span>　':dot(hereD))+nameOf(hereName) : '雪道外', '海拔 ' + alt + ' m');
     }
     if (fr % 2 === 0) drawMini(px, pz, hx, hz, S.speed, now);

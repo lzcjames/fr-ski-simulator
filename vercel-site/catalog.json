@@ -12,8 +12,8 @@
         20,
         60
       ],
-      "bytes": 7436478,
-      "sha256": "2303727c974d4198843362b698086d24a5a53084561a5d95a405c860bfbd25b8",
+      "bytes": 7439427,
+      "sha256": "f17273f82f47919a4b98e81fc8c9317e9162dbb74516dd968fc6110c1d34ac86",
       "play": "games/alpe-d-huez/index.html",
       "qa": {
         "mobilePortrait": true,
@@ -21,14 +21,16 @@
         "backend": "webgl2",
         "firstPersonDesktop": true,
         "firstPersonMobile": true,
+        "liftPortrait": true,
+        "liftLandscape": true,
         "desktop": true
       },
       "status": "engineering-preview",
       "image": "images/alpe-d-huez.png",
       "engineVersion": 2,
-      "engineSha256": "0711e0ef55eee01864dec7d64c670da534ea0b82b9edb4b0c94e4ec67bfcbd8d",
+      "engineSha256": "a6bc18f10c2a47611b0f71ee145b5521529a4d4decff023ba9fcb403cbef2c80",
       "upstreamSha256": "1f41cd96d76c5ac30a371aa890bd6378806fd7d7340e0241e35d6fc002f86c70",
-      "engineRevision": "2.0.1"
+      "engineRevision": "2.0.2"
     },
     {
       "slug": "galibier-thabor",
@@ -40,8 +42,8 @@
         20,
         60
       ],
-      "bytes": 7801750,
-      "sha256": "1660d33d54fabd9c7ec3965e7b1f5eaa08090e05a920f4ae2c40166299c97af5",
+      "bytes": 7804699,
+      "sha256": "59237288086e195be16c5fcb5b5708d6af93070697c53611a469858ede6cb0c4",
       "play": "games/galibier-thabor/index.html",
       "qa": {
         "mobilePortrait": true,
@@ -49,14 +51,16 @@
         "backend": "webgl2",
         "firstPersonDesktop": true,
         "firstPersonMobile": true,
+        "liftPortrait": true,
+        "liftLandscape": true,
         "desktop": true
       },
       "status": "engineering-preview",
       "image": "images/galibier-thabor.png",
       "engineVersion": 2,
-      "engineSha256": "0711e0ef55eee01864dec7d64c670da534ea0b82b9edb4b0c94e4ec67bfcbd8d",
+      "engineSha256": "a6bc18f10c2a47611b0f71ee145b5521529a4d4decff023ba9fcb403cbef2c80",
       "upstreamSha256": "1f41cd96d76c5ac30a371aa890bd6378806fd7d7340e0241e35d6fc002f86c70",
-      "engineRevision": "2.0.1"
+      "engineRevision": "2.0.2"
     },
     {
       "slug": "les-deux-alpes",
@@ -68,8 +72,8 @@
         20,
         60
       ],
-      "bytes": 7355633,
-      "sha256": "8767a676ba0b390357e93138ede0a844b0aec6af90c37aa8f39ffc7251197e2c",
+      "bytes": 7358582,
+      "sha256": "d7dfeb2d08a90b05bfece7d07fede900dd898e26d65f59a65e5d816a7ebe98ba",
       "play": "games/les-deux-alpes/index.html",
       "qa": {
         "mobilePortrait": true,
@@ -77,14 +81,16 @@
         "backend": "webgl2",
         "firstPersonDesktop": true,
         "firstPersonMobile": true,
+        "liftPortrait": true,
+        "liftLandscape": true,
         "desktop": true
       },
       "status": "engineering-preview",
       "image": "images/les-deux-alpes.png",
       "engineVersion": 2,
-      "engineSha256": "0711e0ef55eee01864dec7d64c670da534ea0b82b9edb4b0c94e4ec67bfcbd8d",
+      "engineSha256": "a6bc18f10c2a47611b0f71ee145b5521529a4d4decff023ba9fcb403cbef2c80",
       "upstreamSha256": "1f41cd96d76c5ac30a371aa890bd6378806fd7d7340e0241e35d6fc002f86c70",
-      "engineRevision": "2.0.1"
+      "engineRevision": "2.0.2"
     },
     {
       "slug": "val-thorens",
@@ -96,8 +102,8 @@
         20,
         60
       ],
-      "bytes": 7263595,
-      "sha256": "5b96cd0edb8b2a79c4282212b902e5a6baef1707aba2c6d897c02d3a59abbe7e",
+      "bytes": 7266544,
+      "sha256": "58d2fd421d857607b3dba5660ee4dd256444affdd87a05a6a0cabc7002189fac",
       "play": "games/val-thorens/index.html",
       "qa": {
         "mobilePortrait": true,
@@ -105,14 +111,16 @@
         "backend": "webgl2",
         "firstPersonDesktop": true,
         "firstPersonMobile": true,
+        "liftPortrait": true,
+        "liftLandscape": true,
         "desktop": true
       },
       "status": "engineering-preview",
       "image": "images/val-thorens.png",
       "engineVersion": 2,
-      "engineSha256": "0711e0ef55eee01864dec7d64c670da534ea0b82b9edb4b0c94e4ec67bfcbd8d",
+      "engineSha256": "a6bc18f10c2a47611b0f71ee145b5521529a4d4decff023ba9fcb403cbef2c80",
       "upstreamSha256": "1f41cd96d76c5ac30a371aa890bd6378806fd7d7340e0241e35d6fc002f86c70",
-      "engineRevision": "2.0.1"
+      "engineRevision": "2.0.2"
     }
   ]
 }

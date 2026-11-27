@@ -5,52 +5,52 @@
       "slug": "alpe-d-huez",
       "play": "games/alpe-d-huez/online.html",
       "offline": "games/alpe-d-huez/index.html",
-      "offlineBytes": 7436478,
+      "offlineBytes": 7439427,
       "onlineBytes": 3330742,
-      "onlineSha256": "4e96a9ac7bcb90ee10752c63799c3d4072ee25569ca42d409416c23f614fa92e",
+      "onlineSha256": "393e1b429b66896ad86ba7a1298f3365148a7987de1761acd799f6be854f7191",
       "assets": [
-        "assets/style-104b873992ba85a4d4fd5fe54ec9f52f6777206fba7749e777204daefd78732c.css",
+        "assets/style-f5242c2ae48359153f8aaf80d21ec0bb47242df40cc198988f0fe1e252f2f5b5.css",
         "assets/bootstrap-89d277315226a196bbb608e981717f1c7e97480c9f840c38a4690f43eb036b14.js",
-        "assets/engine-2be15009a6ff6e567f1c5a99bb75fd6a9d7523891cb699dfec37f68d174df72b.js"
+        "assets/engine-e35bbe570d3063c3ad9110e5677a5898658b50c2d235f3e85dec199f451fc0a7.js"
       ]
     },
     {
       "slug": "galibier-thabor",
       "play": "games/galibier-thabor/online.html",
       "offline": "games/galibier-thabor/index.html",
-      "offlineBytes": 7801750,
+      "offlineBytes": 7804699,
       "onlineBytes": 3696014,
-      "onlineSha256": "6ad0f748812151dbb5fe4a5ff4057ea50b18b40f2aea4316b45273ec620c5dcc",
+      "onlineSha256": "60ecf3addbcb396a1d3d2cebb9613ca2115eeb3ee4ecae087f60b6f917c5c71a",
       "assets": [
-        "assets/style-104b873992ba85a4d4fd5fe54ec9f52f6777206fba7749e777204daefd78732c.css",
+        "assets/style-f5242c2ae48359153f8aaf80d21ec0bb47242df40cc198988f0fe1e252f2f5b5.css",
         "assets/bootstrap-89d277315226a196bbb608e981717f1c7e97480c9f840c38a4690f43eb036b14.js",
-        "assets/engine-2be15009a6ff6e567f1c5a99bb75fd6a9d7523891cb699dfec37f68d174df72b.js"
+        "assets/engine-e35bbe570d3063c3ad9110e5677a5898658b50c2d235f3e85dec199f451fc0a7.js"
       ]
     },
     {
       "slug": "les-deux-alpes",
       "play": "games/les-deux-alpes/online.html",
       "offline": "games/les-deux-alpes/index.html",
-      "offlineBytes": 7355633,
+      "offlineBytes": 7358582,
       "onlineBytes": 3249897,
-      "onlineSha256": "b2fb5ec8a154cf2072131c20fac06279808ca0d91789d840c7fe6b4750b1f4da",
+      "onlineSha256": "9867a73a31f3ffe74b35abd02a0bbe69aab1d9d12dab246f9768023c8899eca0",
       "assets": [
-        "assets/style-104b873992ba85a4d4fd5fe54ec9f52f6777206fba7749e777204daefd78732c.css",
+        "assets/style-f5242c2ae48359153f8aaf80d21ec0bb47242df40cc198988f0fe1e252f2f5b5.css",
         "assets/bootstrap-89d277315226a196bbb608e981717f1c7e97480c9f840c38a4690f43eb036b14.js",
-        "assets/engine-2be15009a6ff6e567f1c5a99bb75fd6a9d7523891cb699dfec37f68d174df72b.js"
+        "assets/engine-e35bbe570d3063c3ad9110e5677a5898658b50c2d235f3e85dec199f451fc0a7.js"
       ]
     },
     {
       "slug": "val-thorens",
       "play": "games/val-thorens/online.html",
       "offline": "games/val-thorens/index.html",
-      "offlineBytes": 7263595,
+      "offlineBytes": 7266544,
       "onlineBytes": 3157859,
-      "onlineSha256": "8af12bfd4d0b3c52a8a9710a773030f977efa2868772e327cd22652a5de31040",
+      "onlineSha256": "da732cfa1cdb0b5a4b98d61b5552f083ccdd39d8e68a84733c3464b85e66302e",
       "assets": [
-        "assets/style-104b873992ba85a4d4fd5fe54ec9f52f6777206fba7749e777204daefd78732c.css",
+        "assets/style-f5242c2ae48359153f8aaf80d21ec0bb47242df40cc198988f0fe1e252f2f5b5.css",
         "assets/bootstrap-89d277315226a196bbb608e981717f1c7e97480c9f840c38a4690f43eb036b14.js",
-        "assets/engine-2be15009a6ff6e567f1c5a99bb75fd6a9d7523891cb699dfec37f68d174df72b.js"
+        "assets/engine-e35bbe570d3063c3ad9110e5677a5898658b50c2d235f3e85dec199f451fc0a7.js"
       ]
     }
   ],
@@ -61,14 +61,14 @@
       "bytes": 1496
     },
     {
-      "path": "assets/engine-2be15009a6ff6e567f1c5a99bb75fd6a9d7523891cb699dfec37f68d174df72b.js",
-      "sha256": "2be15009a6ff6e567f1c5a99bb75fd6a9d7523891cb699dfec37f68d174df72b",
-      "bytes": 3217273
+      "path": "assets/engine-e35bbe570d3063c3ad9110e5677a5898658b50c2d235f3e85dec199f451fc0a7.js",
+      "sha256": "e35bbe570d3063c3ad9110e5677a5898658b50c2d235f3e85dec199f451fc0a7",
+      "bytes": 3219530
     },
     {
-      "path": "assets/style-104b873992ba85a4d4fd5fe54ec9f52f6777206fba7749e777204daefd78732c.css",
-      "sha256": "104b873992ba85a4d4fd5fe54ec9f52f6777206fba7749e777204daefd78732c",
-      "bytes": 887278
+      "path": "assets/style-f5242c2ae48359153f8aaf80d21ec0bb47242df40cc198988f0fe1e252f2f5b5.css",
+      "sha256": "f5242c2ae48359153f8aaf80d21ec0bb47242df40cc198988f0fe1e252f2f5b5",
+      "bytes": 887970
     }
   ]
 }
