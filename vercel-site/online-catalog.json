@@ -5,39 +5,52 @@
       "slug": "alpe-d-huez",
       "play": "games/alpe-d-huez/online.html",
       "offline": "games/alpe-d-huez/index.html",
-      "offlineBytes": 7435553,
-      "onlineBytes": 3330717,
-      "onlineSha256": "a539706c88f3c864d32f6596f970e3d4868b67e48448c43a796672576fb7c979",
+      "offlineBytes": 7436478,
+      "onlineBytes": 3330742,
+      "onlineSha256": "4e96a9ac7bcb90ee10752c63799c3d4072ee25569ca42d409416c23f614fa92e",
       "assets": [
         "assets/style-104b873992ba85a4d4fd5fe54ec9f52f6777206fba7749e777204daefd78732c.css",
         "assets/bootstrap-89d277315226a196bbb608e981717f1c7e97480c9f840c38a4690f43eb036b14.js",
-        "assets/engine-fc6172d1285e4d30b0a4e475f59ff884ad9d0b272ea68de6e0cc23550cb8a840.js"
+        "assets/engine-2be15009a6ff6e567f1c5a99bb75fd6a9d7523891cb699dfec37f68d174df72b.js"
+      ]
+    },
+    {
+      "slug": "galibier-thabor",
+      "play": "games/galibier-thabor/online.html",
+      "offline": "games/galibier-thabor/index.html",
+      "offlineBytes": 7801750,
+      "onlineBytes": 3696014,
+      "onlineSha256": "6ad0f748812151dbb5fe4a5ff4057ea50b18b40f2aea4316b45273ec620c5dcc",
+      "assets": [
+        "assets/style-104b873992ba85a4d4fd5fe54ec9f52f6777206fba7749e777204daefd78732c.css",
+        "assets/bootstrap-89d277315226a196bbb608e981717f1c7e97480c9f840c38a4690f43eb036b14.js",
+        "assets/engine-2be15009a6ff6e567f1c5a99bb75fd6a9d7523891cb699dfec37f68d174df72b.js"
       ]
     },
     {
       "slug": "les-deux-alpes",
       "play": "games/les-deux-alpes/online.html",
       "offline": "games/les-deux-alpes/index.html",
-      "offlineBytes": 7354708,
-      "onlineBytes": 3249872,
-      "onlineSha256": "fea4cca478d5b050c223e7f2938663be3ab1184ad365ff2a48fde584b2e1d66d",
+      "offlineBytes": 7355633,
+      "onlineBytes": 3249897,
+      "onlineSha256": "b2fb5ec8a154cf2072131c20fac06279808ca0d91789d840c7fe6b4750b1f4da",
       "assets": [
         "assets/style-104b873992ba85a4d4fd5fe54ec9f52f6777206fba7749e777204daefd78732c.css",
         "assets/bootstrap-89d277315226a196bbb608e981717f1c7e97480c9f840c38a4690f43eb036b14.js",
-        "assets/engine-fc6172d1285e4d30b0a4e475f59ff884ad9d0b272ea68de6e0cc23550cb8a840.js"
+        "assets/engine-2be15009a6ff6e567f1c5a99bb75fd6a9d7523891cb699dfec37f68d174df72b.js"
       ]
     },
     {
       "slug": "val-thorens",
       "play": "games/val-thorens/online.html",
       "offline": "games/val-thorens/index.html",
-      "offlineBytes": 7262670,
-      "onlineBytes": 3157834,
-      "onlineSha256": "215ae9d671bd017cf74c7960f75e0f5f7320954d5a5b2d7074dec13d62fe1a1e",
+      "offlineBytes": 7263595,
+      "onlineBytes": 3157859,
+      "onlineSha256": "8af12bfd4d0b3c52a8a9710a773030f977efa2868772e327cd22652a5de31040",
       "assets": [
         "assets/style-104b873992ba85a4d4fd5fe54ec9f52f6777206fba7749e777204daefd78732c.css",
         "assets/bootstrap-89d277315226a196bbb608e981717f1c7e97480c9f840c38a4690f43eb036b14.js",
-        "assets/engine-fc6172d1285e4d30b0a4e475f59ff884ad9d0b272ea68de6e0cc23550cb8a840.js"
+        "assets/engine-2be15009a6ff6e567f1c5a99bb75fd6a9d7523891cb699dfec37f68d174df72b.js"
       ]
     }
   ],
@@ -48,9 +61,9 @@
       "bytes": 1496
     },
     {
-      "path": "assets/engine-fc6172d1285e4d30b0a4e475f59ff884ad9d0b272ea68de6e0cc23550cb8a840.js",
-      "sha256": "fc6172d1285e4d30b0a4e475f59ff884ad9d0b272ea68de6e0cc23550cb8a840",
-      "bytes": 3216373
+      "path": "assets/engine-2be15009a6ff6e567f1c5a99bb75fd6a9d7523891cb699dfec37f68d174df72b.js",
+      "sha256": "2be15009a6ff6e567f1c5a99bb75fd6a9d7523891cb699dfec37f68d174df72b",
+      "bytes": 3217273
     },
     {
       "path": "assets/style-104b873992ba85a4d4fd5fe54ec9f52f6777206fba7749e777204daefd78732c.css",

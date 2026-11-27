@@ -7323,7 +7323,33 @@ const Fpv = (() => {
   const RID = [[0, 0, 0, 0], [0, 0, 0, 0]], boneData = new Float32Array(4 * 16 * 4), hideData = new Float32Array(4 * 32 * 4), UNI = { tw: [0, 0, 0, 0], bend: [0, 0, 0, 0], ski: [0, 0, 0, 0], fx: [0, 0, 0, 0] };
   const fail = e => { if (!F.dead) { F.dead = true; F.vis = false; F.err = e; try { console.error('fpv: first person falls back to the figure\'s own arms', e); } catch (_) { } } };
   // (the figure's triangles without skis, poles and gloves: the list it is drawn from while these stand in for them)
-  F.figIdx = function () { const m = Skier.mesh, keep = []; for (let i = 0; i < m.ni; i += 3) { const id = m.V[m.I[i] * 10 + 6]; if (id !== 9 && id !== 10 && id !== 2) keep.push(m.I[i], m.I[i + 1], m.I[i + 2]); } return new Uint32Array(keep); };
+  F.figIdx = function (mode) {
+    const m = Skier.mesh, keep = [];
+    if (!m.pr || m.pr.length !== 18 || !m.bodyNi || !m.nSki) throw new Error('unexpected FPV mesh layout');
+    const end = mode === 'ski' ? m.nSki : m.bodyNi;
+    for (let i = 0; i < end; i += 3) {
+      const id = m.V[m.I[i] * 10 + 6];
+      if (id !== 9 && id !== 10 && id !== 2 && (mode === 'ski' || (id !== 11 && id !== 3)))
+        keep.push(m.I[i],m.I[i+1],m.I[i+2]);
+    }
+    if (mode !== 'ski') {
+      // Retain just the selected board, its bindings and snowboard boots.
+      for (const k of [mode === 'goofy' ? 15 : 6,16,17])
+        for (let i=m.pr[k][0];i<m.pr[k][1];i++) keep.push(m.I[i]);
+    }
+    return new Uint32Array(keep);
+  };
+  const frFpvBuffers = new WeakMap();
+  function frFpvIndices(mode) {
+    const m=Skier.mesh;
+    let cache=frFpvBuffers.get(m);
+    if (!cache) { cache=new Map(); frFpvBuffers.set(m,cache); }
+    if (!cache.has(mode)) {
+      const idx=F.figIdx(mode);
+      cache.set(mode,{ib:gfx.buffer(idx,'index'),count:idx.length});
+    }
+    return cache.get(mode);
+  }
   function shaders() {
     const LK = (typeof Skier !== 'undefined' && Skier.LOOK) || {}, c = (k, d) => { const a = LK[k] && LK[k].alb || d; return 'vec3f(' + a.map(x => (+x).toFixed(4)).join(', ') + ')'; }, n = x => (+x).toFixed(5);
     const lib = `
@@ -7632,7 +7658,7 @@ fn frag(v: VOut) -> FOut {
       gfx = App.gfx; const t0 = performance.now(); if (!F.mesh) F.build();
       vb = gfx.buffer(F.mesh.V, 'vertex'); ib = gfx.buffer(F.mesh.I, 'index');
       boneTex = gfx.texture({ w: 4, h: 16, format: 'rgba32f', filter: 'nearest' }); hideTex = gfx.texture({ w: 4, h: 32, format: 'rgba32f', filter: 'nearest' });
-      const fi = F.figIdx(); hideIb = gfx.buffer(fi, 'index'); hideCount = fi.length; hideFor = Skier.mesh;
+      // FPV indices are created lazily for the selected equipment.
       // (and these skis by themselves, for the view that shows nothing else)
       { const m = F.mesh, kb = []; for (let i = 0; i < m.ni; i += 3) { const id = m.V[m.I[i] * VSZ + 6]; if (id !== 4 && id !== 5 && id !== 8) kb.push(m.I[i], m.I[i + 1], m.I[i + 2]); } F.boardIb = gfx.buffer(new Uint32Array(kb), 'index'); F.boardCount = kb.length; }
       { const m = F.mesh, keep = []; for (let i = 0; i < m.ni; i += 3) if (m.V[m.I[i] * VSZ + 6] === 8) keep.push(m.I[i], m.I[i + 1], m.I[i + 2]); skiIb = gfx.buffer(new Uint32Array(keep), 'index'); skiCount = keep.length; }
@@ -7658,8 +7684,19 @@ fn frag(v: VOut) -> FOut {
         if (!(F.vis && F.posed && figTex)) return dr0.apply(this, arguments);
         if (F.hideFig) return;        // (the view of the ski tips: the lens is down among the knees, and nothing of the skier is to show; the shadow is still cast)
         const d0 = gfx.draw; let n = 0;
-        if (Skier.want) Skier.want(); if (hideFor !== Skier.mesh) { const fi = F.figIdx(); hideIb = gfx.buffer(fi, 'index'); hideCount = fi.length; hideFor = Skier.mesh; }     // (the figure's body was swapped: Variants 'body')
-        gfx.draw = function (P, d) { if (d && d.tex && d.tex.tBones === figTex && (d.count === Skier.mesh.ni || d.count === Skier.mesh.nSki || (Skier.mesh.sb && d.count === Skier.mesh.sb.n))) { n++; const e = Object.assign({}, d); e.tex = Object.assign({}, d.tex, { tBones: hideTex }); e.ib = hideIb; e.count = hideCount; return d0.call(this, P, e); } return d0.apply(this, arguments); };
+        if (Skier.want) Skier.want();
+        const mode = AVZ.board ? (AVZ.sbSg < 0 ? 'goofy' : 'regular') : 'ski';
+        const selected=frFpvIndices(mode);
+        gfx.draw = function (P, d) {
+          const m=Skier.mesh, live=mode==='ski' ? {ib:m.gpu.ib,n:m.nSki} : (mode==='goofy' ? m.sbG : m.sbR);
+          if (d && d.tex && d.tex.tBones===figTex && live && d.ib===live.ib && d.count===live.n) {
+            n++;
+            const e=Object.assign({},d,{tex:Object.assign({},d.tex,{tBones:hideTex}),ib:selected.ib,count:selected.count});
+            F.frDraw={mode,count:e.count,frames:(F.frDraw?.frames||0)+1};
+            return d0.call(this,P,e);
+          }
+          return d0.apply(this,arguments);
+        };
         try { return dr0.apply(this, arguments); } finally { gfx.draw = d0; if (!n) fail(new Error('the figure is no longer drawn the way this expects')); }
       };
       Render.passes.opaque.push(R => F.draw(R)); F.hooked = true;

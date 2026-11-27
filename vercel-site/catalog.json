@@ -12,20 +12,51 @@
         20,
         60
       ],
-      "bytes": 7435553,
-      "sha256": "e2b86de3e335a29822bba01889d29213bca5c7e3991263c053d22a1de3ab7489",
+      "bytes": 7436478,
+      "sha256": "2303727c974d4198843362b698086d24a5a53084561a5d95a405c860bfbd25b8",
       "play": "games/alpe-d-huez/index.html",
       "qa": {
         "mobilePortrait": true,
         "mobileLandscape": true,
         "backend": "webgl2",
+        "firstPersonDesktop": true,
+        "firstPersonMobile": true,
         "desktop": true
       },
       "status": "engineering-preview",
       "image": "images/alpe-d-huez.png",
       "engineVersion": 2,
-      "engineSha256": "87a47362d898bb8485bdb231199f7c93dd2f021de6cb42caa7238458cd418de3",
-      "upstreamSha256": "1f41cd96d76c5ac30a371aa890bd6378806fd7d7340e0241e35d6fc002f86c70"
+      "engineSha256": "0711e0ef55eee01864dec7d64c670da534ea0b82b9edb4b0c94e4ec67bfcbd8d",
+      "upstreamSha256": "1f41cd96d76c5ac30a371aa890bd6378806fd7d7340e0241e35d6fc002f86c70",
+      "engineRevision": "2.0.1"
+    },
+    {
+      "slug": "galibier-thabor",
+      "name": "Galibier-Thabor",
+      "sector": "Valloire – Crêt de la Brive – lower Sétaz (candidate sector)",
+      "routes": 8,
+      "grid": [
+        5,
+        20,
+        60
+      ],
+      "bytes": 7801750,
+      "sha256": "1660d33d54fabd9c7ec3965e7b1f5eaa08090e05a920f4ae2c40166299c97af5",
+      "play": "games/galibier-thabor/index.html",
+      "qa": {
+        "mobilePortrait": true,
+        "mobileLandscape": true,
+        "backend": "webgl2",
+        "firstPersonDesktop": true,
+        "firstPersonMobile": true,
+        "desktop": true
+      },
+      "status": "engineering-preview",
+      "image": "images/galibier-thabor.png",
+      "engineVersion": 2,
+      "engineSha256": "0711e0ef55eee01864dec7d64c670da534ea0b82b9edb4b0c94e4ec67bfcbd8d",
+      "upstreamSha256": "1f41cd96d76c5ac30a371aa890bd6378806fd7d7340e0241e35d6fc002f86c70",
+      "engineRevision": "2.0.1"
     },
     {
       "slug": "les-deux-alpes",
@@ -37,20 +68,23 @@
         20,
         60
       ],
-      "bytes": 7354708,
-      "sha256": "30d21da19cce7b4fa9865b7a1540dfdeb1fb5bf2f31d091e914691f8557e7214",
+      "bytes": 7355633,
+      "sha256": "8767a676ba0b390357e93138ede0a844b0aec6af90c37aa8f39ffc7251197e2c",
       "play": "games/les-deux-alpes/index.html",
       "qa": {
         "mobilePortrait": true,
         "mobileLandscape": true,
         "backend": "webgl2",
+        "firstPersonDesktop": true,
+        "firstPersonMobile": true,
         "desktop": true
       },
       "status": "engineering-preview",
       "image": "images/les-deux-alpes.png",
       "engineVersion": 2,
-      "engineSha256": "87a47362d898bb8485bdb231199f7c93dd2f021de6cb42caa7238458cd418de3",
-      "upstreamSha256": "1f41cd96d76c5ac30a371aa890bd6378806fd7d7340e0241e35d6fc002f86c70"
+      "engineSha256": "0711e0ef55eee01864dec7d64c670da534ea0b82b9edb4b0c94e4ec67bfcbd8d",
+      "upstreamSha256": "1f41cd96d76c5ac30a371aa890bd6378806fd7d7340e0241e35d6fc002f86c70",
+      "engineRevision": "2.0.1"
     },
     {
       "slug": "val-thorens",
@@ -62,20 +96,23 @@
         20,
         60
       ],
-      "bytes": 7262670,
-      "sha256": "12d08e2b9e2f3e1a3cd0fb87fe673e880a175739e313822349ccac3178b25469",
+      "bytes": 7263595,
+      "sha256": "5b96cd0edb8b2a79c4282212b902e5a6baef1707aba2c6d897c02d3a59abbe7e",
       "play": "games/val-thorens/index.html",
       "qa": {
         "mobilePortrait": true,
         "mobileLandscape": true,
         "backend": "webgl2",
+        "firstPersonDesktop": true,
+        "firstPersonMobile": true,
         "desktop": true
       },
       "status": "engineering-preview",
       "image": "images/val-thorens.png",
       "engineVersion": 2,
-      "engineSha256": "87a47362d898bb8485bdb231199f7c93dd2f021de6cb42caa7238458cd418de3",
-      "upstreamSha256": "1f41cd96d76c5ac30a371aa890bd6378806fd7d7340e0241e35d6fc002f86c70"
+      "engineSha256": "0711e0ef55eee01864dec7d64c670da534ea0b82b9edb4b0c94e4ec67bfcbd8d",
+      "upstreamSha256": "1f41cd96d76c5ac30a371aa890bd6378806fd7d7340e0241e35d6fc002f86c70",
+      "engineRevision": "2.0.1"
     }
   ]
 }
