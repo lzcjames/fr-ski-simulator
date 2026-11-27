@@ -5,7 +5,7 @@ on:
       lobby_run:
         description: Successful v2 lobby or four-resort integration run
         required: true
-        default: '45915425426'
+        default: '45963236050'
         type: string
   push:
     branches: [master]
@@ -30,7 +30,7 @@ jobs:
         id: source
         env:
           GH_TOKEN: ${{ github.token }}
-          RUN_ID: ${{ inputs.lobby_run || '45915425426' }}
+          RUN_ID: ${{ inputs.lobby_run || '45963236050' }}
         run: |
           set -euo pipefail
           [[ "$RUN_ID" =~ ^[0-9]+$ ]]
@@ -48,7 +48,7 @@ jobs:
         with:
           name: ${{ steps.source.outputs.artifact }}
           path: .work/site
-          run-id: ${{ inputs.lobby_run || '45915425426' }}
+          run-id: ${{ inputs.lobby_run || '45963236050' }}
           github-token: ${{ github.token }}
       - name: Verify static site and hashes
         run: |
@@ -65,7 +65,7 @@ jobs:
           PY
       - name: Commit only validated static site to release branch
         env:
-          RUN_ID: ${{ inputs.lobby_run || '45915425426' }}
+          RUN_ID: ${{ inputs.lobby_run || '45963236050' }}
         run: |
           set -euo pipefail
           SITE="$PWD/.work/site"
