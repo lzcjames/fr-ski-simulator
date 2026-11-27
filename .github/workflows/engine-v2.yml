@@ -4,6 +4,8 @@ on:
   push:
     paths:
       - 'scripts/engine_v2.py'
+      - 'scripts/fpv_v2_fix.py'
+      - 'scripts/v2_features_probe.js'
       - '.github/workflows/engine-v2.yml'
 permissions:
   contents: read
@@ -24,7 +26,7 @@ jobs:
             data_run: '45911106567'
             data_artifact: val-thorens-onboarding-evidence
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     env:
       RESORT: ${{ matrix.resort }}
     steps:
@@ -37,9 +39,9 @@ jobs:
           node-version: '22'
       - uses: actions/download-artifact@v4
         with:
-          name: avoriaz-upstream-review
+          name: engine-v2-pinned-upstream
           path: .work/upstream
-          run-id: '45913169272'
+          run-id: '45914214557'
           github-token: ${{ github.token }}
       - uses: actions/download-artifact@v4
         with:
@@ -75,6 +77,14 @@ jobs:
         id: landscape
         continue-on-error: true
         run: node .work/skill/scripts/qa_html.mjs --html ".work/v2/$RESORT.html" --out .work/landscape --width 844 --height 390 --mobile --backend webgl2 --timeout 180 --probe scripts/mobile_probe.js
+      - name: Desktop first-person and equipment regression
+        id: features_desktop
+        continue-on-error: true
+        run: node .work/skill/scripts/qa_html.mjs --html ".work/v2/$RESORT.html" --out .work/features-desktop --width 960 --height 540 --backend webgl2 --timeout 180 --probe scripts/v2_features_probe.js
+      - name: Mobile first-person and equipment regression
+        id: features_mobile
+        continue-on-error: true
+        run: node .work/skill/scripts/qa_html.mjs --html ".work/v2/$RESORT.html" --out .work/features-mobile --width 390 --height 844 --mobile --backend webgl2 --timeout 180 --probe scripts/v2_features_probe.js
       - name: Preserve candidate and browser evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -86,6 +96,8 @@ jobs:
             .work/desktop/
             .work/portrait/
             .work/landscape/
+            .work/features-desktop/
+            .work/features-mobile/
           if-no-files-found: warn
           retention-days: 30
       - name: Require all browser gates
@@ -94,6 +106,8 @@ jobs:
           test "${{ steps.desktop.outcome }}" = success
           test "${{ steps.portrait.outcome }}" = success
           test "${{ steps.landscape.outcome }}" = success
+          test "${{ steps.features_desktop.outcome }}" = success
+          test "${{ steps.features_mobile.outcome }}" = success
   archive-upstream:
     runs-on: ubuntu-latest
     timeout-minutes: 10

@@ -14,6 +14,7 @@ from build_game import js, prepare_data
 from engine_v1 import compile_engine as compile_v1, pack_engine as pack_v1, validate_slots
 from resort_config import load_config
 from grid_codec import decode_data
+from fpv_v2_fix import patch_fpv
 
 UPSTREAM_SHA="1f41cd96d76c5ac30a371aa890bd6378806fd7d7340e0241e35d6fc002f86c70"
 VERSION=2
@@ -52,6 +53,7 @@ def compile_engine(raw):
   window.__frGpuPreflight = {available:frTextureLimit,required:18,accepted:frTextureLimit>=18};
   if (frTextureLimit < 18) { console.warn('WebGPU adapter has insufficient sampled textures; using WebGL2'); return null; }
   const device = await adapter.requestDevice({ requiredLimits: { maxSampledTexturesPerShaderStage: 18 } });""")
+    src=patch_fpv(src)
     compiled=compile_v1(src)
     if re.search(r"^AVZ_DATA\.lidar\s*=",compiled,re.M):raise ValueError("foreign LiDAR mutation survived")
     validate_slots(compiled)
@@ -64,7 +66,7 @@ def pack_engine(compiled,data,cfg):
     pattern=r"^const FR_RESORT = (.*);$"
     m=re.search(pattern,src,re.M)
     meta=json.loads(m[1])
-    meta.update(engineVersion=VERSION,upstreamSha256=UPSTREAM_SHA,
+    meta.update(engineVersion=VERSION,engineRevision='2.0.1',upstreamSha256=UPSTREAM_SHA,
                 pbKey=cfg["slug"]+"-v2-preview-pb",onboardKey=cfg["slug"]+"-v2-preview-onboard")
     return src[:m.start()]+"const FR_RESORT = "+js(meta)+";"+src[m.end():]
 

@@ -50,7 +50,16 @@ try{
   await key('KeyV',undefined,'v');
   await until(()=>s.game().view!==oldView,'camera hotkey');
   check('Camera changed',s.game().views.some(v=>v.id===s.game().view),{from:oldView,to:s.game().view});
+  // A camera enum change is insufficient: require an actual first-person draw.
+  const fp=s.game().fpv;
+  await until(()=>fp.dead||fp.frDraw?.mode==='regular','regular first-person draw');
+  check('First-person regular mesh renders without fallback',!fp.dead&&fp.frDraw?.count>0,{draw:fp.frDraw});
   await snap('04-camera');
+  if(navigator.maxTouchPoints>0)await clickVisible('#sb-sw','FPV touch switch');
+  else await key('KeyZ',undefined,'z');
+  await until(()=>fp.dead||(s.avz.stance==='goofy'&&fp.frDraw?.mode==='goofy'),'goofy first-person draw');
+  check('First-person goofy mesh renders without fallback',!fp.dead&&fp.frDraw?.mode==='goofy'&&fp.frDraw?.count>0,{draw:fp.frDraw});
+  await snap('04b-camera-goofy');
   s.game().setView('chase',true);
   const initial=s.game().s.p.slice();
   await key('ArrowLeft',true,'ArrowLeft');await wait(600);await key('ArrowLeft',false,'ArrowLeft');
@@ -66,7 +75,10 @@ try{
   await clickVisible('[data-ride="0"]','Ski equipment');
   check('Return to skis',s.avz.board===false);
   s.map.open(false);s.app().paused=false;
-  check('Ready after mode changes',s.app().ready===true);
+  s.game().setView('fp',true);
+  await until(()=>fp.dead||fp.frDraw?.mode==='ski','ski first-person draw');
+  check('First-person ski mesh renders without fallback',!fp.dead&&fp.frDraw?.mode==='ski'&&fp.frDraw?.count>0,{draw:fp.frDraw});
+  check('Ready after mode changes',s.app().ready===true&&!fp.dead);
   await snap('05-return-to-skis');
 }catch(e){result.passed=false;result.warnings.push(String(e.stack||e));}
 return result;
