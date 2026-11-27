@@ -15,6 +15,12 @@ class SharedTests(unittest.TestCase):
         self.assertNotEqual(a,b)
         self.assertIn('<script src="../../assets/engine-',a)
         self.assertNotIn('console.log(boot)',a)
+    def test_v2_early_locale_stays_inline(self):
+        early="<script>let language=navigator.language;</script>"
+        source=fixture("A").replace("<html>","<html>"+early)
+        online,resources,names=extract(source)
+        self.assertIn(early,online)
+        self.assertEqual(resources,extract(fixture("A"))[1])
     def test_reject_relative_css(self):
         with self.assertRaises(ValueError):extract(fixture("A").replace("data:image/png;base64,abc","../image.png"))
     def test_reject_unknown_script_structure(self):

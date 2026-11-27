@@ -17,6 +17,11 @@ def digest(raw):return hashlib.sha256(raw).hexdigest()
 
 def extract(src):
     blocks=list(re.finditer(r"<(script|style)\b([^>]*)>(.*?)</\1\s*>",src,re.S|re.I))
+    # V2 has a small early language-selection script in the head; leave it inline.
+    if [m[1] for m in blocks]==["script","style","script","script"] and not blocks[0][2]:
+        if len(blocks[0][3])>2000 or "navigator.language" not in blocks[0][3]:
+            raise ValueError("unexpected early locale script")
+        blocks=blocks[1:]
     if [m[1] for m in blocks]!=["style","script","script"] or any(m[2] for m in blocks):
         raise ValueError("unexpected standalone block structure")
     style,bootstrap,engine=blocks

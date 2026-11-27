@@ -1,0 +1,90 @@
+name: Engine v2 three-resort shared lobby
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_run:
+        description: Successful Engine v2 upstream integration run
+        default: '45914214557'
+        required: true
+  push:
+    paths:
+      - 'scripts/build_v2_lobby.py'
+      - '.github/workflows/v2-lobby.yml'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Confirm full v2 regression success
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ inputs.candidate_run || '45914214557' }}
+        run: |
+          [[ "$RUN_ID" =~ ^[0-9]+$ ]]
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID" > .source-run.json
+          python - <<'PY'
+          import json,os
+          r=json.load(open('.source-run.json'))
+          assert r['status']=='completed' and r['conclusion']=='success'
+          assert r['path'].split('@')[0]=='.github/workflows/engine-v2.yml'
+          assert r['head_repository']['full_name']==os.environ['GITHUB_REPOSITORY']
+          assert r['head_branch']=='master'
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: '*-v2-candidate'
+          path: .work/candidates
+          run-id: ${{ inputs.candidate_run || '45914214557' }}
+          github-token: ${{ github.token }}
+      - name: Build validated three-resort lobby and shared assets
+        run: |
+          python tests/test_shared_site.py -v
+          python scripts/build_v2_lobby.py --artifacts .work/candidates --stage .work/stage --out .work/offline
+          python scripts/build_shared_site.py --input .work/offline --out .work/site
+          python scripts/build_shared_site.py --out .work/site --check-only
+          for script in .work/site/assets/*.js; do node --check "$script"; done
+      - name: Browser lobby check
+        run: |
+          CHROME=$(command -v google-chrome || command -v chromium)
+          test -n "$CHROME"
+          "$CHROME" --headless --disable-gpu --no-sandbox --dump-dom "file://$PWD/.work/site/index.html" > .work/lobby-dom.html
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          dom=Path('.work/lobby-dom.html').read_text()
+          for r in json.loads(Path('.work/site/online-catalog.json').read_text())['resorts']:
+              assert r['play'] in dom and r['offline'] in dom
+          PY
+          "$CHROME" --headless --disable-gpu --no-sandbox --window-size=1440,1100 --screenshot="$PWD/.work/lobby.png" "file://$PWD/.work/site/index.html"
+      - name: Test real HTTP games and cache across three resorts
+        run: |
+          npm install --no-save --ignore-scripts --no-audit --no-fund playwright-core@1.51.1
+          export CHROME_PATH="$(command -v google-chrome || command -v chromium)"
+          test -n "$CHROME_PATH"
+          node scripts/check_shared_cache.mjs .work/site .work/cache-qa
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v2-lobby-qa
+          path: |
+            .work/cache-qa/
+            .work/lobby.png
+            .work/lobby-dom.html
+          if-no-files-found: warn
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fr-ski-simulator-v2-lobby
+          path: .work/site/
+          if-no-files-found: error
+          retention-days: 30
