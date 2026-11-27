@@ -2,7 +2,9 @@
 
 把真实的法国滑雪场做成可以在浏览器里玩的 3D 滑雪游戏。
 
-目前以 [Avoriaz 游戏](https://avoriaz.manus.space/) 为模板，利用其作者的 Skill 制作 Les Deux Alpes（双阿尔卑斯）滑雪场游戏。
+目前以 [Avoriaz 游戏](https://avoriaz.manus.space/) 为模板，利用其作者的 Skill 制作多个法国雪场的滑雪游戏。
+
+**在线游玩：[fr-ski-simulator.vercel.app](https://fr-ski-simulator.vercel.app)** — Engine v2.0.1，四个雪场、31 条候选计时路线。手机缆车触屏操作修复 v2.0.2 正在测试，尚未发布。
 
 ## 一、制作游戏需要什么？
 
@@ -124,9 +126,11 @@ Engine v1.4 的轻量启动实验已通过两个雪场的桌面测试。统一�
 
 大厅 v0.2 将相同的 CSS 与 JavaScript 提取为 3.96 MB 内容哈希共享资源，在线 HTML 分别约 3.25 MB 与 3.33 MB，离线版保持不变。静态拆分、还原及两座雪场的 HTTP 缓存和在线基础操作测试均通过：[共享引擎](docs/shared-engine.md) · [共享大厅下载](https://github.com/lzcjames/fr-ski-simulator/actions/runs/45910446321/artifacts/15159504086)。
 
-Engine v2.0 已适配作者最新授权 Avoriaz 版本，三座雪场 Les Deux Alpes、Alpe d'Huez、Val Thorens 的全部九项桌面与手机 WebGL2 基础测试已通过。Val Thorens 保留七条候选路线。三雪场新版大厅和共享缓存已通过测试，单板换脚通过状态检查，但第一人称绘制异常正在修复：[Engine v2.0](docs/engine-v2.md) · [游戏及测试产物](https://github.com/lzcjames/fr-ski-simulator/actions/runs/45914214557)。WebGPU 软件适配器曾因 18 个采样纹理超过默认 16 的限制而失败；v2 新增能力预检，实际 WebGPU 仍待验证。
+Engine v2.0.1 已适配作者最新授权 Avoriaz 版本并修复第一人称装备绘制。Les Deux Alpes（8 条）、Alpe d'Huez（8 条）、Val Thorens（7 条）及 Galibier-Thabor（8 条）共 31 条候选计时路线；四个雪场均通过桌面、手机横竖屏及第一人称专项测试。四雪场共享引擎约 4.11 MB，自动化 HTTP 测试切换雪场时公共资源传输量为零。[测试及下载](https://github.com/lzcjames/fr-ski-simulator/actions/runs/45963236050) · [引擎](docs/engine-v2.md) · [Vercel 发布](docs/vercel.md)。
 
-第四座雪场按用户指定改为 Galibier-Thabor（Valloire / Valmeinier），暂缓 Tignes。首版候选区域为 Valloire 一侧，真实数据和 v2.0 基础测试已启动；[接入说明](docs/galibier-thabor-integration.md)。
+Galibier-Thabor 首版只覆盖 Valloire 一侧候选区域，不是整个 Valloire / Valmeinier 联合雪域；Tignes 暂缓。[接入说明](docs/galibier-thabor-integration.md)。
+
+目前线上仍是工程预览版。手机缆车触屏按钮 v2.0.2 已编写，待四雪场横竖屏实际乘坐测试通过再发布：[缆车修复说明](docs/mobile-lift.md) · [测试](https://github.com/lzcjames/fr-ski-simulator/actions/runs/45990548083)。真实设备性能、完整雪道通关和实际 WebGPU 后端仍待验证。
 
 ## 项目文件与技术资料
 
