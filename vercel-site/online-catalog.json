@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "resorts": [
+    {
+      "slug": "alpe-d-huez",
+      "play": "games/alpe-d-huez/online.html",
+      "offline": "games/alpe-d-huez/index.html",
+      "offlineBytes": 7435553,
+      "onlineBytes": 3330717,
+      "onlineSha256": "a539706c88f3c864d32f6596f970e3d4868b67e48448c43a796672576fb7c979",
+      "assets": [
+        "assets/style-104b873992ba85a4d4fd5fe54ec9f52f6777206fba7749e777204daefd78732c.css",
+        "assets/bootstrap-89d277315226a196bbb608e981717f1c7e97480c9f840c38a4690f43eb036b14.js",
+        "assets/engine-fc6172d1285e4d30b0a4e475f59ff884ad9d0b272ea68de6e0cc23550cb8a840.js"
+      ]
+    },
+    {
+      "slug": "les-deux-alpes",
+      "play": "games/les-deux-alpes/online.html",
+      "offline": "games/les-deux-alpes/index.html",
+      "offlineBytes": 7354708,
+      "onlineBytes": 3249872,
+      "onlineSha256": "fea4cca478d5b050c223e7f2938663be3ab1184ad365ff2a48fde584b2e1d66d",
+      "assets": [
+        "assets/style-104b873992ba85a4d4fd5fe54ec9f52f6777206fba7749e777204daefd78732c.css",
+        "assets/bootstrap-89d277315226a196bbb608e981717f1c7e97480c9f840c38a4690f43eb036b14.js",
+        "assets/engine-fc6172d1285e4d30b0a4e475f59ff884ad9d0b272ea68de6e0cc23550cb8a840.js"
+      ]
+    },
+    {
+      "slug": "val-thorens",
+      "play": "games/val-thorens/online.html",
+      "offline": "games/val-thorens/index.html",
+      "offlineBytes": 7262670,
+      "onlineBytes": 3157834,
+      "onlineSha256": "215ae9d671bd017cf74c7960f75e0f5f7320954d5a5b2d7074dec13d62fe1a1e",
+      "assets": [
+        "assets/style-104b873992ba85a4d4fd5fe54ec9f52f6777206fba7749e777204daefd78732c.css",
+        "assets/bootstrap-89d277315226a196bbb608e981717f1c7e97480c9f840c38a4690f43eb036b14.js",
+        "assets/engine-fc6172d1285e4d30b0a4e475f59ff884ad9d0b272ea68de6e0cc23550cb8a840.js"
+      ]
+    }
+  ],
+  "assets": [
+    {
+      "path": "assets/bootstrap-89d277315226a196bbb608e981717f1c7e97480c9f840c38a4690f43eb036b14.js",
+      "sha256": "89d277315226a196bbb608e981717f1c7e97480c9f840c38a4690f43eb036b14",
+      "bytes": 1496
+    },
+    {
+      "path": "assets/engine-fc6172d1285e4d30b0a4e475f59ff884ad9d0b272ea68de6e0cc23550cb8a840.js",
+      "sha256": "fc6172d1285e4d30b0a4e475f59ff884ad9d0b272ea68de6e0cc23550cb8a840",
+      "bytes": 3216373
+    },
+    {
+      "path": "assets/style-104b873992ba85a4d4fd5fe54ec9f52f6777206fba7749e777204daefd78732c.css",
+      "sha256": "104b873992ba85a4d4fd5fe54ec9f52f6777206fba7749e777204daefd78732c",
+      "bytes": 887278
+    }
+  ]
+}

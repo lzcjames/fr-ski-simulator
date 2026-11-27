@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "engineVersion": 2,
+  "resorts": [
+    {
+      "slug": "alpe-d-huez",
+      "name": "Alpe d'Huez",
+      "sector": "Signal – Les Jeux – Alpe d'Huez 1860",
+      "routes": 8,
+      "grid": [
+        5,
+        20,
+        60
+      ],
+      "bytes": 7435553,
+      "sha256": "e2b86de3e335a29822bba01889d29213bca5c7e3991263c053d22a1de3ab7489",
+      "play": "games/alpe-d-huez/index.html",
+      "qa": {
+        "mobilePortrait": true,
+        "mobileLandscape": true,
+        "backend": "webgl2",
+        "desktop": true
+      },
+      "status": "engineering-preview",
+      "image": "images/alpe-d-huez.png",
+      "engineVersion": 2,
+      "engineSha256": "87a47362d898bb8485bdb231199f7c93dd2f021de6cb42caa7238458cd418de3",
+      "upstreamSha256": "1f41cd96d76c5ac30a371aa890bd6378806fd7d7340e0241e35d6fc002f86c70"
+    },
+    {
+      "slug": "les-deux-alpes",
+      "name": "Les Deux Alpes",
+      "sector": "Belle Étoile – Diable – Les Deux Alpes 1650",
+      "routes": 8,
+      "grid": [
+        5,
+        20,
+        60
+      ],
+      "bytes": 7354708,
+      "sha256": "30d21da19cce7b4fa9865b7a1540dfdeb1fb5bf2f31d091e914691f8557e7214",
+      "play": "games/les-deux-alpes/index.html",
+      "qa": {
+        "mobilePortrait": true,
+        "mobileLandscape": true,
+        "backend": "webgl2",
+        "desktop": true
+      },
+      "status": "engineering-preview",
+      "image": "images/les-deux-alpes.png",
+      "engineVersion": 2,
+      "engineSha256": "87a47362d898bb8485bdb231199f7c93dd2f021de6cb42caa7238458cd418de3",
+      "upstreamSha256": "1f41cd96d76c5ac30a371aa890bd6378806fd7d7340e0241e35d6fc002f86c70"
+    },
+    {
+      "slug": "val-thorens",
+      "name": "Val Thorens",
+      "sector": "Village 2300 – Cascades – Plein Sud (candidate sector)",
+      "routes": 7,
+      "grid": [
+        5,
+        20,
+        60
+      ],
+      "bytes": 7262670,
+      "sha256": "12d08e2b9e2f3e1a3cd0fb87fe673e880a175739e313822349ccac3178b25469",
+      "play": "games/val-thorens/index.html",
+      "qa": {
+        "mobilePortrait": true,
+        "mobileLandscape": true,
+        "backend": "webgl2",
+        "desktop": true
+      },
+      "status": "engineering-preview",
+      "image": "images/val-thorens.png",
+      "engineVersion": 2,
+      "engineSha256": "87a47362d898bb8485bdb231199f7c93dd2f021de6cb42caa7238458cd418de3",
+      "upstreamSha256": "1f41cd96d76c5ac30a371aa890bd6378806fd7d7340e0241e35d6fc002f86c70"
+    }
+  ]
+}
