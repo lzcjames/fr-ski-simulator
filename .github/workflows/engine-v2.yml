@@ -1,30 +1,64 @@
 name: Engine v2 upstream integration
 on:
   workflow_dispatch:
+    inputs:
+      galibier_data_run:
+        description: Optional successful Galibier-Thabor onboarding run ID
+        required: false
+        type: string
+  workflow_run:
+    workflows: ["New v2 resort IGN integration"]
+    types: [completed]
+    branches: [master]
   push:
     paths:
       - 'scripts/engine_v2.py'
       - 'scripts/fpv_v2_fix.py'
       - 'scripts/v2_features_probe.js'
-      - '.github/workflows/engine-v2.yml'
 permissions:
   contents: read
   actions: read
 jobs:
+  matrix:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    outputs:
+      include: ${{ steps.plan.outputs.include }}
+      four: ${{ steps.plan.outputs.four }}
+    steps:
+      - name: Validate source and plan resorts
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ inputs.galibier_data_run || github.event.workflow_run.id || '' }}
+        run: |
+          python - <<'PY'
+          import json,os,subprocess,re
+          rows=[dict(resort='les-deux-alpes',data_run='45498926509',data_artifact='les-deux-alpes-ign-preview'),
+                dict(resort='alpe-d-huez',data_run='45498926509',data_artifact='alpe-d-huez-ign-preview'),
+                dict(resort='val-thorens',data_run='45911106567',data_artifact='val-thorens-onboarding-evidence')]
+          run=os.environ.get('RUN_ID','')
+          if run:
+              assert re.fullmatch(r'[0-9]+',run)
+              repo=os.environ['GITHUB_REPOSITORY']
+              def api(path):return json.loads(subprocess.check_output(['gh','api',path]))
+              r=api(f'repos/{repo}/actions/runs/{run}')
+              assert r['status']=='completed' and r['conclusion']=='success'
+              assert r['path'].split('@')[0]=='.github/workflows/onboard-v2-resort.yml'
+              assert r['head_repository']['full_name']==repo and r['head_branch']=='master'
+              a=api(f'repos/{repo}/actions/runs/{run}/artifacts')['artifacts']
+              assert any(x['name']=='galibier-thabor-ign-data' and not x['expired'] for x in a)
+              rows.append(dict(resort='galibier-thabor',data_run=run,data_artifact='galibier-thabor-ign-data'))
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:
+              f.write('include='+json.dumps(rows,separators=(',',':'))+'\n')
+              f.write('four='+str(bool(run)).lower()+'\n')
+          PY
   verify:
+    needs: matrix
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - resort: les-deux-alpes
-            data_run: '45498926509'
-            data_artifact: les-deux-alpes-ign-preview
-          - resort: alpe-d-huez
-            data_run: '45498926509'
-            data_artifact: alpe-d-huez-ign-preview
-          - resort: val-thorens
-            data_run: '45911106567'
-            data_artifact: val-thorens-onboarding-evidence
+        include: ${{ fromJSON(needs.matrix.outputs.include) }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -109,14 +143,15 @@ jobs:
           test "${{ steps.features_desktop.outcome }}" = success
           test "${{ steps.features_mobile.outcome }}" = success
   archive-upstream:
+    needs: matrix
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: avoriaz-upstream-review
+          name: engine-v2-pinned-upstream
           path: .work/upstream
-          run-id: '45913169272'
+          run-id: '45914214557'
           github-token: ${{ github.token }}
       - run: echo '1f41cd96d76c5ac30a371aa890bd6378806fd7d7340e0241e35d6fc002f86c70  .work/upstream/avoriaz-current.review.html' | sha256sum --check
       - uses: actions/upload-artifact@v4
@@ -124,3 +159,52 @@ jobs:
           name: engine-v2-pinned-upstream
           path: .work/upstream/
           retention-days: 90
+  assemble-four:
+    needs: [matrix, verify]
+    if: needs.matrix.outputs.four == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: '*-v2-candidate'
+          path: .work/candidates
+      - uses: actions/download-artifact@v4
+        with:
+          name: engine-v2-pinned-upstream
+          path: .work/upstream
+          run-id: '45914214557'
+          github-token: ${{ github.token }}
+      - name: Independently verify four games and feature results
+        run: |
+          python tests/test_shared_site.py -v
+          python scripts/build_v2_lobby.py --four --upstream .work/upstream/avoriaz-current.review.html --artifacts .work/candidates --stage .work/stage --out .work/offline
+          python scripts/build_shared_site.py --input .work/offline --out .work/site
+          python scripts/build_shared_site.py --out .work/site --check-only
+          for script in .work/site/assets/*.js; do node --check "$script"; done
+      - name: Verify actual four-resort HTTP cache
+        run: |
+          npm install --no-save --ignore-scripts --no-audit --no-fund playwright-core@1.51.1
+          export CHROME_PATH="$(command -v google-chrome || command -v chromium)"
+          test -n "$CHROME_PATH"
+          node scripts/check_shared_cache.mjs .work/site .work/cache-qa
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v2-four-lobby-qa
+          path: .work/cache-qa/
+          if-no-files-found: warn
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fr-ski-simulator-v2-four-lobby
+          path: .work/site/
+          if-no-files-found: error
+          retention-days: 30

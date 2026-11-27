@@ -1,10 +1,11 @@
 name: Engine v2 snowboard and camera regression
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - 'scripts/v2_features_probe.js'
-      - '.github/workflows/v2-features.yml'
+    inputs:
+      candidate_run:
+        description: Run containing v2.0.1 candidate artifacts (diagnostic rerun)
+        required: true
+        type: string
 permissions:
   contents: read
   actions: read
@@ -29,7 +30,7 @@ jobs:
         with:
           name: ${{ matrix.resort }}-v2-candidate
           path: .work/input
-          run-id: '45914214557'
+          run-id: ${{ inputs.candidate_run }}
           github-token: ${{ github.token }}
       - name: Prepare pinned QA and software GPU
         run: |
