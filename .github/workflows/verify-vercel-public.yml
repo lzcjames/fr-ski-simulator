@@ -1,0 +1,44 @@
+name: Verify public Vercel release
+on:
+  workflow_dispatch:
+    inputs:
+      release_sha:
+        description: Exact validated vercel-release commit
+        required: true
+        default: '4fda70bd5995d950a9d657a360cc8b616c4b2f93'
+        type: string
+  push:
+    branches: [master]
+    paths:
+      - '.github/workflows/verify-vercel-public.yml'
+      - 'scripts/verify_vercel_public.py'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      RELEASE_SHA: ${{ inputs.release_sha || '4fda70bd5995d950a9d657a360cc8b616c4b2f93' }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+      - name: Verify release branch ancestry
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          git fetch origin vercel-release
+          git merge-base --is-ancestor "$RELEASE_SHA" origin/vercel-release
+          git worktree add --detach .work/public-release "$RELEASE_SHA"
+      - name: Verify actual public HTTPS responses
+        run: |
+          python scripts/build_shared_site.py --out .work/public-release/vercel-site --check-only
+          python scripts/verify_vercel_public.py --site .work/public-release/vercel-site --out .work/public-qa/report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: vercel-public-qa
+          path: .work/public-qa/
+          if-no-files-found: warn
+          retention-days: 30
