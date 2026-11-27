@@ -1,0 +1,33 @@
+{
+  "resort": "Galibier-Thabor",
+  "slug": "galibier-thabor",
+  "sector": "Valloire – Crêt de la Brive – lower Sétaz (candidate sector)",
+  "status": "candidate Valloire sector; not the entire linked Galibier-Thabor domain",
+  "bbox": [
+    6.426,
+    45.145,
+    6.473,
+    45.174
+  ],
+  "origin": [
+    6.4495,
+    45.1595
+  ],
+  "dem": {
+    "source": "terrarium",
+    "step": 30,
+    "zoom": 13,
+    "padding": 150
+  },
+  "skillCommit": "4f64120bb085d1dc8f8978b9cb65cf7e9e92fcd1",
+  "build": {
+    "maxCourses": 8,
+    "maxStarts": 12
+  },
+  "preview": {
+    "primaryCourse": null,
+    "includeGradeReview": false,
+    "regionLabel": "FRANCE / MAURIENNE",
+    "wetBelow": 1500
+  }
+}
