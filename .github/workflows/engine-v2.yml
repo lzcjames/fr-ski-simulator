@@ -1,0 +1,112 @@
+name: Engine v2 upstream integration
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/engine_v2.py'
+      - '.github/workflows/engine-v2.yml'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - resort: les-deux-alpes
+            data_run: '45498926509'
+            data_artifact: les-deux-alpes-ign-preview
+          - resort: alpe-d-huez
+            data_run: '45498926509'
+            data_artifact: alpe-d-huez-ign-preview
+          - resort: val-thorens
+            data_run: '45911106567'
+            data_artifact: val-thorens-onboarding-evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      RESORT: ${{ matrix.resort }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          name: avoriaz-upstream-review
+          path: .work/upstream
+          run-id: '45913169272'
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.data_artifact }}
+          path: .work/data
+          run-id: ${{ matrix.data_run }}
+          github-token: ${{ github.token }}
+      - name: Compile v2 and verify exact IGN data
+        run: |
+          python tests/test_generator.py -v
+          python tests/test_grid_codec.py -v
+          DATA=$(find .work/data -type f -name layered-data.json)
+          test -f "$DATA"
+          python scripts/engine_v2.py --template .work/upstream/avoriaz-current.review.html --config "resorts/$RESORT/config.json" --data "$DATA" --out ".work/v2/$RESORT.html" --engine-out .work/shared-v2.html
+      - name: Prepare pinned QA and software GPU
+        run: |
+          git clone https://github.com/awoele/ski-resort-to-game.git .work/skill
+          git -C .work/skill checkout --detach 4f64120bb085d1dc8f8978b9cb65cf7e9e92fcd1
+          CHROME=$(command -v google-chrome || command -v chromium)
+          test -n "$CHROME"
+          printf '#!/bin/bash\nexec "%s" --use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader "$@"\n' "$CHROME" > .work/chrome
+          chmod +x .work/chrome
+          echo "CHROME_PATH=$PWD/.work/chrome" >> "$GITHUB_ENV"
+      - name: Desktop WebGL2
+        id: desktop
+        continue-on-error: true
+        run: node .work/skill/scripts/qa_html.mjs --html ".work/v2/$RESORT.html" --out .work/desktop --width 960 --height 540 --backend webgl2 --timeout 180 --probe .work/skill/scripts/smoke_probe.js
+      - name: Mobile portrait
+        id: portrait
+        continue-on-error: true
+        run: node .work/skill/scripts/qa_html.mjs --html ".work/v2/$RESORT.html" --out .work/portrait --width 390 --height 844 --mobile --backend webgl2 --timeout 180 --probe scripts/mobile_probe.js
+      - name: Mobile landscape
+        id: landscape
+        continue-on-error: true
+        run: node .work/skill/scripts/qa_html.mjs --html ".work/v2/$RESORT.html" --out .work/landscape --width 844 --height 390 --mobile --backend webgl2 --timeout 180 --probe scripts/mobile_probe.js
+      - name: Preserve candidate and browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.resort }}-v2-candidate
+          path: |
+            .work/v2/
+            .work/shared-v2.html
+            .work/desktop/
+            .work/portrait/
+            .work/landscape/
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Require all browser gates
+        if: always()
+        run: |
+          test "${{ steps.desktop.outcome }}" = success
+          test "${{ steps.portrait.outcome }}" = success
+          test "${{ steps.landscape.outcome }}" = success
+  archive-upstream:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: avoriaz-upstream-review
+          path: .work/upstream
+          run-id: '45913169272'
+          github-token: ${{ github.token }}
+      - run: echo '1f41cd96d76c5ac30a371aa890bd6378806fd7d7340e0241e35d6fc002f86c70  .work/upstream/avoriaz-current.review.html' | sha256sum --check
+      - uses: actions/upload-artifact@v4
+        with:
+          name: engine-v2-pinned-upstream
+          path: .work/upstream/
+          retention-days: 90
